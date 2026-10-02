@@ -39,6 +39,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     private var powerOffRequested = false
+    private var pendingVoiceQuery: String? = null
 
     init {
         viewModelScope.launch {
