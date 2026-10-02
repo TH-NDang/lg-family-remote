@@ -10,6 +10,10 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.2.6
+
+- Thêm icon ứng dụng hình remote dễ nhận biết trên màn hình chính Android, cùng phong cách xanh–tím đã duyệt.
+
 ## Mới trong 0.2.5
 
 - Chống crash khi bấm nhanh bằng hàng đợi remote giới hạn thay cho việc tạo nhiều lệnh song song.

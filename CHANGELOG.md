@@ -1,5 +1,12 @@
 # Thay đổi
 
+## 0.2.6 — 2026-10-02
+
+- Thêm launcher icon riêng dựa trên mẫu đã duyệt: nền gradient xanh–tím, remote màu tối, nút nguồn đỏ, D-pad/OK lớn.
+- Android 8+ dùng vector icon; Android 8/API 26 trở lên có adaptive icon để launcher tự áp dụng hình tròn/squircle mà remote vẫn nằm trong vùng an toàn.
+- Không thêm chữ hoặc logo hãng vào icon.
+
+
 ## 0.2.5 — 2026-10-02
 
 - Sửa tình trạng app có thể tự thoát/crash khi thao tác liên tục ở 0.2.4.
