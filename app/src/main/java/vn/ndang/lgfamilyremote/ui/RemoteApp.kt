@@ -104,7 +104,9 @@ fun RemoteApp(vm: RemoteViewModel) {
                         IconButton(
                             onClick = vm::powerToggle,
                             enabled = powerAction != PowerAction.NONE,
-                            modifier = Modifier.size(48.dp)
+                            modifier = Modifier
+                                .size(64.dp)
+                                .background(Color(0xFFFFE4E2), CircleShape)
                         ) {
                             Icon(
                                 Icons.Default.PowerSettingsNew,
@@ -113,9 +115,9 @@ fun RemoteApp(vm: RemoteViewModel) {
                                     PowerAction.TURN_ON -> "Bật tivi"
                                     PowerAction.NONE -> "Nguồn tivi"
                                 },
-                                modifier = Modifier.size(29.dp),
-                                tint = if (state.connection == ConnectionState.CONNECTED)
-                                    Color(0xFFB3261E) else MaterialTheme.colorScheme.primary
+                                modifier = Modifier.size(36.dp),
+                                tint = if (powerAction == PowerAction.NONE)
+                                    Color(0xFF9A8A89) else Color(0xFFB3261E)
                             )
                         }
                         IconButton(onClick = { settings = true }) {

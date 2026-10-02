@@ -12,7 +12,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = (System.getenv("APP_VERSION_CODE") ?: "7").toInt()
-        versionName = "0.2.8"
+        versionName = "0.2.9"
         vectorDrawables.useSupportLibrary = true
     }
     signingConfigs {

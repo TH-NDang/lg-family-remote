@@ -1,5 +1,13 @@
 # Thay đổi
 
+## 0.2.9 — 2026-10-02
+
+- Tăng nút nguồn trên header từ 48dp lên **64dp** để dễ bấm hơn cho người lớn tuổi.
+- Tăng icon nguồn từ 29dp lên **36dp**.
+- Thêm nền tròn đỏ nhạt giúp nút nguồn nổi bật hơn mà không làm thay đổi cơ chế một chạm.
+- Khi đang kết nối/ghép đôi và nút tạm khóa, icon chuyển xám để dễ nhận biết.
+
+
 ## 0.2.8 — 2026-10-02
 
 - Sửa trường hợp Wake-on-LAN đã đánh thức TV nhưng app chuyển chấm xám trước khi webOS sẵn sàng nhận kết nối.

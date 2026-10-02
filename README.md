@@ -10,6 +10,10 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.2.9
+
+- Nút nguồn trên header lớn hơn: vùng bấm 64dp, icon 36dp và nền đỏ nhạt để bố mẹ dễ nhìn và dễ chạm.
+
 ## Mới trong 0.2.8
 
 - Cải thiện bật TV chậm: sau Wake-on-LAN, app giữ chấm ở trạng thái đang kết nối và tự thử lại nhanh trong tối đa khoảng 90 giây.
