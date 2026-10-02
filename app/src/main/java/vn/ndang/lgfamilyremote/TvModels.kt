@@ -37,6 +37,17 @@ enum class ErrorKind { NETWORK, PAIRING_REQUIRED, REJECTED, CERTIFICATE, COMMAND
 class TvException(val kind: ErrorKind, message: String, cause: Throwable? = null) : IOException(message, cause)
 enum class PairingKind { PROMPT, PIN }
 enum class ConnectionState { IDLE, CONNECTING, PAIRING, CONNECTED, OFFLINE }
+enum class PowerAction { TURN_ON, TURN_OFF, NONE }
+
+fun powerActionFor(connection: ConnectionState, busy: Boolean): PowerAction {
+    if (busy) return PowerAction.NONE
+    return when (connection) {
+        ConnectionState.CONNECTED -> PowerAction.TURN_OFF
+        ConnectionState.IDLE, ConnectionState.OFFLINE -> PowerAction.TURN_ON
+        ConnectionState.CONNECTING, ConnectionState.PAIRING -> PowerAction.NONE
+    }
+}
+
 data class RemoteState(
     val loaded: Boolean = false,
     val tv: TvConfig? = null,

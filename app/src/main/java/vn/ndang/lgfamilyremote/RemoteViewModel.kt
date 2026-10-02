@@ -261,6 +261,15 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     fun volume(up: Boolean) = command { it.changeVolume(up) }
     fun mute() = command { it.toggleMute() }
     fun youtube() = command { it.launchYouTube(state.value.tv?.youtubeId.orEmpty()) }
+
+    fun powerToggle() {
+        when (powerActionFor(state.value.connection, state.value.busy)) {
+            PowerAction.TURN_OFF -> powerOff()
+            PowerAction.TURN_ON -> powerOn()
+            PowerAction.NONE -> Unit
+        }
+    }
+
     fun powerOff() = command { current ->
         powerOffRequested = true
         try {
@@ -282,7 +291,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             mutableState.update { it.copy(connection = ConnectionState.OFFLINE, busy = false,
                 status = if (acknowledged) "Tivi đã nhận yêu cầu tắt."
                     else "Tivi đã ngắt kết nối; hãy kiểm tra màn hình để xác nhận đã tắt.",
-                notice = if (acknowledged) "Tivi đã nhận yêu cầu tắt." else "Đã gửi yêu cầu tắt; hãy kiểm tra màn hình tivi.") }
+                notice = null) }
         } catch (e: CancellationException) {
             powerOffRequested = false
             throw e
@@ -303,7 +312,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             try {
                 wakeOnLan.send(tv)
                 if (generation == token) {
-                    mutableState.update { it.copy(notice = "Đã gửi lệnh bật. Chấm xanh sẽ sáng khi kết nối được tivi.") }
+                    mutableState.update { it.copy(notice = null) }
                     reconnect = state.value.connection != ConnectionState.CONNECTED
                 }
             } catch (e: CancellationException) { throw e }

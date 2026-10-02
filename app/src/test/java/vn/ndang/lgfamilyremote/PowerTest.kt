@@ -13,6 +13,15 @@ import vn.ndang.lgfamilyremote.network.*
 import java.util.concurrent.ConcurrentLinkedQueue
 
 class PowerTest {
+    @Test fun oneClickPowerUsesConnectionState() {
+        assertEquals(PowerAction.TURN_OFF, powerActionFor(ConnectionState.CONNECTED, false))
+        assertEquals(PowerAction.TURN_ON, powerActionFor(ConnectionState.OFFLINE, false))
+        assertEquals(PowerAction.TURN_ON, powerActionFor(ConnectionState.IDLE, false))
+        assertEquals(PowerAction.NONE, powerActionFor(ConnectionState.CONNECTING, false))
+        assertEquals(PowerAction.NONE, powerActionFor(ConnectionState.PAIRING, false))
+        assertEquals(PowerAction.NONE, powerActionFor(ConnectionState.CONNECTED, true))
+    }
+
     @Test fun normalizesSupportedMacFormats() {
         listOf("aa:bb:cc:dd:ee:02", "AA-BB-CC-DD-EE-02", "aabbccddee02").forEach {
             assertEquals("AA:BB:CC:DD:EE:02", WakeProtocol.normalizeMac(it))

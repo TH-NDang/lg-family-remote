@@ -10,6 +10,12 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.2.3
+
+- Màn hình remote chỉ giữ các điều khiển cần dùng; bỏ footer và các thông báo thành công không cần thiết.
+- Nút nguồn là **một nút một chạm**: chấm xanh thì bấm để tắt, chấm xám thì bấm để bật. Không có hộp xác nhận.
+- Thông tin/lỗi kỹ thuật được dồn vào Cài đặt thay vì che màn hình remote của người dùng trong gia đình.
+
 ## Mới trong 0.2.2
 
 - Sửa đọc MAC cho payload LG phổ biến wifiInfo / wiredInfo; trước đây app chỉ đọc wifi / wired nên có thể báo sai “chưa có MAC”.

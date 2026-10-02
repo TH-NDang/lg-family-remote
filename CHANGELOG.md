@@ -1,5 +1,17 @@
 # Thay đổi
 
+## 0.2.3 — 2026-10-02
+
+- Tối giản màn hình remote cho người không rành công nghệ: bỏ footer “Không quảng cáo · Chỉ dùng mạng nhà”, bỏ card lỗi kỹ thuật khỏi màn hình chính và bỏ snackbar thành công.
+- Lỗi kỹ thuật chỉ hiện trong phần Cài đặt/thiết lập, không che các nút điều khiển hằng ngày.
+- Nút nguồn trên header trở thành một nút một chạm, không mở hộp xác nhận:
+  - đang kết nối (chấm xanh) → tắt TV;
+  - chưa kết nối/chấm xám → gửi lệnh bật TV;
+  - đang kết nối/ghép đôi → tạm khóa nút nguồn.
+- Giữ cơ chế an toàn của 0.2.2: nếu chưa có MAC, app cố lấy/lưu MAC trước khi tắt; nếu không lấy được thì không tắt.
+- Thêm kiểm thử quyết định bật/tắt theo trạng thái kết nối.
+
+
 ## 0.2.2 — 2026-10-02
 
 - Sửa lỗi chính khiến app báo không có MAC trên nhiều LG webOS: hỗ trợ đúng wifiInfo / wiredInfo, đồng thời giữ wifi / wired cho firmware cũ.

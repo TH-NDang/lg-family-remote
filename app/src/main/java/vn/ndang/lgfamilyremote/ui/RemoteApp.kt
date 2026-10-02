@@ -27,7 +27,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,14 +38,9 @@ fun RemoteApp(vm: RemoteViewModel) {
     val state by vm.state.collectAsStateWithLifecycle()
     var settings by rememberSaveable { mutableStateOf(false) }
     var confirm by remember { mutableStateOf("") }
-    var powerMenu by rememberSaveable { mutableStateOf(false) }
     var pin by rememberSaveable(state.tv?.host) { mutableStateOf("") }
-    val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(state.connection) {
         if (state.connection == ConnectionState.CONNECTED) settings = false
-    }
-    LaunchedEffect(state.notice) {
-        state.notice?.let { snackbar.showSnackbar(it); vm.clearNotice() }
     }
     LaunchedEffect(state.pairing, state.connection) {
         if (state.pairing != PairingKind.PIN || state.connection == ConnectionState.CONNECTED) pin = ""
@@ -77,10 +71,23 @@ fun RemoteApp(vm: RemoteViewModel) {
                         IconButton(onClick = { settings = true }, modifier = Modifier.semantics {
                             contentDescription = "Kết nối tivi: ${state.status}. Mở cài đặt kết nối."
                         }) { ConnectionDot(state) }
-                        IconButton(onClick = { powerMenu = true }, enabled = !state.busy,
-                            modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Default.PowerSettingsNew, "Nguồn tivi: bật hoặc tắt",
-                                Modifier.size(29.dp), tint = Color(0xFFB3261E))
+                        val powerAction = powerActionFor(state.connection, state.busy)
+                        IconButton(
+                            onClick = vm::powerToggle,
+                            enabled = powerAction != PowerAction.NONE,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.PowerSettingsNew,
+                                contentDescription = when (powerAction) {
+                                    PowerAction.TURN_OFF -> "Tắt tivi"
+                                    PowerAction.TURN_ON -> "Bật tivi"
+                                    PowerAction.NONE -> "Nguồn tivi"
+                                },
+                                modifier = Modifier.size(29.dp),
+                                tint = if (state.connection == ConnectionState.CONNECTED)
+                                    Color(0xFFB3261E) else MaterialTheme.colorScheme.primary
+                            )
                         }
                         IconButton(onClick = { settings = true }) {
                             Icon(Icons.Default.Settings, "Cài đặt kết nối tivi")
@@ -90,19 +97,17 @@ fun RemoteApp(vm: RemoteViewModel) {
                 Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    if (state.error != null) ErrorCard(state.error!!, vm::clearError)
+                    if ((settings || state.tv == null) && state.error != null) {
+                        ErrorCard(state.error!!, vm::clearError)
+                    }
                     if (settings || state.tv == null) {
                         SetupPanel(state, vm, { confirm = "repair" }, { confirm = "forget" })
                     } else {
                         RemotePanel(state, vm::youtube, vm::key, vm::volume, vm::mute)
-                        Text("Không quảng cáo · Chỉ dùng mạng nhà", Modifier.fillMaxWidth().padding(top = 4.dp),
-                            textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Spacer(Modifier.height(8.dp))
                 }
             }
-            SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).widthIn(max = 460.dp).padding(16.dp))
         }
     }
     if (state.connection == ConnectionState.PAIRING && state.pairing == PairingKind.PIN) {
@@ -110,11 +115,6 @@ fun RemoteApp(vm: RemoteViewModel) {
             onPinChange = { pin = it.filter { ch -> ch in '0'..'9' }.take(12) },
             submit = { vm.submitPin(pin) }, cancel = vm::cancelPairing)
     }
-    if (powerMenu && state.tv != null) PowerDialog(state,
-        close = { powerMenu = false },
-        turnOn = { powerMenu = false; vm.powerOn() },
-        turnOff = { powerMenu = false; vm.powerOff() },
-        settings = { powerMenu = false; settings = true })
     if (confirm.isNotEmpty()) AlertDialog(
         onDismissRequest = { confirm = "" },
         title = { Text(if (confirm == "forget") "Quên tivi này?" else "Ghép đôi lại với tivi?") },
@@ -172,36 +172,6 @@ private fun ConnectionDot(state: RemoteState) {
         else -> Color(0xFF8A929E)
     }
     Box(Modifier.size(10.dp).background(color, CircleShape))
-}
-
-@Composable
-private fun PowerDialog(state: RemoteState, close: () -> Unit, turnOn: () -> Unit,
-                        turnOff: () -> Unit, settings: () -> Unit) {
-    // Two explicit actions avoid treating an offline socket as proof that the TV is off.
-    AlertDialog(onDismissRequest = close,
-        icon = { Icon(Icons.Default.PowerSettingsNew, null, tint = Color(0xFFB3261E)) },
-        title = { Text("Nguồn tivi") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = turnOn,
-                    enabled = !state.busy && state.connection != ConnectionState.PAIRING,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp)) {
-                    Text("Bật tivi", fontSize = 21.sp, fontWeight = FontWeight.Bold)
-                }
-                Button(onClick = turnOff,
-                    enabled = !state.busy && state.connection == ConnectionState.CONNECTED,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB3261E)),
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp)) {
-                    Text("Tắt tivi", fontSize = 21.sp, fontWeight = FontWeight.Bold)
-                }
-                Text("Bật qua mạng cần tivi hỗ trợ và bật TV On With Mobile / Turn on via Wi-Fi.",
-                    style = MaterialTheme.typography.bodyMedium)
-                if (state.tv?.wakeMacs.isNullOrEmpty()) TextButton(onClick = settings) {
-                    Text("Thiết lập bật tivi")
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = close) { Text("Đóng") } })
 }
 
 @Composable
