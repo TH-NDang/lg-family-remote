@@ -1,6 +1,11 @@
 package vn.ndang.lgfamilyremote.ui
 
+import android.app.Activity
+import android.content.Intent
+import android.speech.RecognizerIntent
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,6 +26,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
@@ -40,6 +46,28 @@ fun RemoteApp(vm: RemoteViewModel) {
     var settings by rememberSaveable { mutableStateOf(false) }
     var confirm by remember { mutableStateOf("") }
     var pin by rememberSaveable(state.tv?.host) { mutableStateOf("") }
+    val context = LocalContext.current
+    val voiceIntent = remember {
+        Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "vi-VN")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "vi-VN")
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Nói nội dung cần tìm")
+        }
+    }
+    val voiceAvailable = remember(context) {
+        voiceIntent.resolveActivity(context.packageManager) != null
+    }
+    val voiceLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() }?.let(vm::voiceSearch)
+        }
+    }
     LaunchedEffect(state.connection) {
         if (state.connection == ConnectionState.CONNECTED) settings = false
     }
@@ -104,7 +132,15 @@ fun RemoteApp(vm: RemoteViewModel) {
                     if (settings || state.tv == null) {
                         SetupPanel(state, vm, { confirm = "repair" }, { confirm = "forget" })
                     } else {
-                        RemotePanel(state, vm::youtube, vm::key, vm::volume, vm::mute)
+                        RemotePanel(
+                            state = state,
+                            youtube = vm::youtube,
+                            voiceAvailable = voiceAvailable,
+                            voiceSearch = { if (voiceAvailable) voiceLauncher.launch(voiceIntent) },
+                            key = vm::key,
+                            volume = vm::volume,
+                            mute = vm::mute
+                        )
                     }
                     Spacer(Modifier.height(8.dp))
                 }
@@ -209,12 +245,29 @@ private fun ConnectionCard(state: RemoteState, retry: () -> Unit, settings: () -
 }
 
 @Composable
-private fun RemotePanel(state: RemoteState, youtube: () -> Unit, key: (String) -> Unit,
-                        volume: (Boolean) -> Unit, mute: () -> Unit) {
+private fun RemotePanel(
+    state: RemoteState,
+    youtube: () -> Unit,
+    voiceAvailable: Boolean,
+    voiceSearch: () -> Unit,
+    key: (String) -> Unit,
+    volume: (Boolean) -> Unit,
+    mute: () -> Unit
+) {
     val enabled = state.connection == ConnectionState.CONNECTED && !state.busy
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Shortcut("YouTube", Icons.Default.PlayArrow, Color(0xFFC62828), enabled, Modifier.weight(1f), youtube)
         Shortcut("Trang chủ", Icons.Default.Home, Color(0xFF315ACB), enabled, Modifier.weight(1f)) { key("HOME") }
+    }
+    FilledTonalButton(
+        onClick = voiceSearch,
+        enabled = enabled && voiceAvailable,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
+        shape = RoundedCornerShape(18.dp)
+    ) {
+        Icon(Icons.Default.Mic, null, Modifier.size(28.dp))
+        Spacer(Modifier.width(10.dp))
+        Text("Tìm kiếm", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
     }
     Surface(shape = RoundedCornerShape(28.dp), color = Color.White) {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
