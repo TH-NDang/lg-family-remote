@@ -5,6 +5,11 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
+    <queries>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
+    </queries>
     <!-- targetSdk 35: do not request ACCESS_LOCAL_NETWORK before targeting 37. -->
     <application
         android:allowBackup="false"
