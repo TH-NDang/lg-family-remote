@@ -111,20 +111,35 @@ class WebOsSession internal constructor(
         else waiting.complete(payload)
     }
 
-    suspend fun request(uri: String, payload: JSONObject = JSONObject()): JSONObject {
+    suspend fun request(uri: String, payload: JSONObject = JSONObject()): JSONObject = requestInternal(uri, payload)
+
+    private suspend fun requestInternal(uri: String, payload: JSONObject, disconnectExpected: Boolean = false): JSONObject {
         if (!isOpen) throw TvException(ErrorKind.NETWORK, "Tivi chưa kết nối. Hãy bấm Thử lại.")
         val id = "r${sequence.incrementAndGet()}"
         val result = CompletableDeferred<JSONObject>()
         pending[id] = result
+        var sent = false
         try {
             if (socket?.send(Protocol.request(id, uri, payload)) != true) {
                 throw TvException(ErrorKind.NETWORK, "Đã mất kết nối với tivi.")
             }
+            sent = true
             return withTimeout(5000) { result.await() }
         } catch (e: TimeoutCancellationException) {
             throw TvException(ErrorKind.COMMAND, "Tivi chưa phản hồi lệnh. Không gửi lại tự động để tránh bấm lặp.", e)
+        } catch (e: TvException) {
+            // A TV may close its socket before acknowledging turnOff. This only means
+            // the command was queued and the connection closed, NOT verified power-off.
+            if (disconnectExpected && sent && e.kind == ErrorKind.NETWORK && !isOpen) {
+                return JSONObject().put("commandSent", true).put("disconnected", true)
+            }
+            throw e
         } finally { pending.remove(id); result.cancel() }
     }
+
+    suspend fun turnOff(): JSONObject = requestInternal("system/turnOff", JSONObject(), disconnectExpected = true)
+    suspend fun wakeAddresses(): List<String> = WakeProtocol.fromConnectionInfo(
+        request("com.webos.service.connectionmanager/getinfo"))
 
     fun subscribeVolume() {
         if (isOpen) socket?.send(Protocol.request("volume", "audio/getVolume", subscribe = true))

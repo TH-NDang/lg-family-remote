@@ -1,5 +1,6 @@
 package vn.ndang.lgfamilyremote
 
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 
@@ -11,18 +12,23 @@ data class TvConfig(
     val secure: Boolean = true,
     val clientKey: String = "",
     val certificateSha256: String = "",
-    val youtubeId: String = ""
+    val youtubeId: String = "",
+    val wakeMacs: List<String> = emptyList()
 ) {
     override fun toString(): String = "$name ($host)"
     fun toJson(): JSONObject = JSONObject().put("host", host).put("name", name)
         .put("uid", uid).put("secure", secure).put("clientKey", clientKey)
         .put("certificateSha256", certificateSha256).put("youtubeId", youtubeId)
+        .put("wakeMacs", JSONArray(wakeMacs))
     companion object {
         fun fromJson(j: JSONObject): TvConfig = TvConfig(
             host = j.getString("host"), name = j.optString("name", "Tivi nhà mình"),
             uid = j.optString("uid"), secure = j.optBoolean("secure", true),
             clientKey = j.optString("clientKey"), certificateSha256 = j.optString("certificateSha256"),
-            youtubeId = j.optString("youtubeId")
+            youtubeId = j.optString("youtubeId"),
+            wakeMacs = j.optJSONArray("wakeMacs")?.let { a ->
+                (0 until a.length().coerceAtMost(4)).map { a.optString(it) }.filter { it.isNotBlank() }
+            }.orEmpty()
         )
     }
 }
@@ -39,5 +45,6 @@ data class RemoteState(
     val found: List<TvConfig> = emptyList(),
     val searching: Boolean = false,
     val volume: VolumeState = VolumeState(),
-    val busy: Boolean = false
+    val busy: Boolean = false,
+    val notice: String? = null
 )

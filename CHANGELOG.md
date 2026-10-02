@@ -1,5 +1,15 @@
 # Thay đổi
 
+## 0.2.0 — 2026-10-02
+
+- Giữ nút nguồn, xác nhận thao tác tắt, header cố định và chấm trạng thái của 0.1.1.
+- Nút nguồn mở hai lựa chọn rõ ràng **Bật tivi** / **Tắt tivi**. Không suy ra tivi đã tắt chỉ vì socket mất kết nối.
+- Thêm Wake-on-LAN cho model hỗ trợ TV On With Mobile; tự đọc MAC Wi-Fi/LAN khi tivi cho phép, có nhập thủ công trong cài đặt nâng cao. Không tự bật tivi khi mở app.
+- Giữ cơ chế dừng thử nối lại sau yêu cầu tắt chủ động. Chọn Bật tivi, Thử lại hoặc mở lại app để nối lại.
+- Giữ các kiểm thử nguồn 0.1.1; bổ sung kiểm thử gói wake, MAC, subnet, đọc cấu hình cũ và các kết quả lệnh nguồn.
+- Từ chối quyền nguồn vẫn là lỗi; khi socket đóng trước hồi đáp chỉ ghi nhận yêu cầu đã gửi, không khẳng định tivi đã tắt.
+- Hướng dẫn và giới hạn model: [docs/POWER.md](docs/POWER.md).
+
 ## 0.1.1 — 2026-10-02
 
 - Nút **Nguồn** trên header, có xác nhận **Tắt TV** để tránh chạm nhầm. Hiện chỉ tắt TV, chưa bật từ trạng thái chờ.

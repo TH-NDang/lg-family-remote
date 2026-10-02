@@ -14,6 +14,7 @@ import vn.ndang.lgfamilyremote.network.*
 class RemoteViewModel(application: Application) : AndroidViewModel(application) {
     private val store = TvStore(application)
     private val discovery = TvDiscovery(application)
+    private val wakeOnLan = WakeOnLan(application)
     private val mutableState = MutableStateFlow(RemoteState())
     val state = mutableState.asStateFlow()
     private var foreground = false
@@ -22,6 +23,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     private var connectionJob: Job? = null
     private var scanJob: Job? = null
     private var commandJob: Job? = null
+    private var infoJob: Job? = null
     private var powerOffRequested = false
 
     init {
@@ -47,17 +49,19 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         foreground = false
         stopConnection()
         scanJob?.cancel()
-        mutableState.update { it.copy(connection = ConnectionState.OFFLINE, busy = false,
+        mutableState.update { it.copy(connection = ConnectionState.OFFLINE, busy = false, notice = null,
             status = if (it.tv == null) "Chưa kết nối tivi" else "Sẽ tự kết nối khi mở app") }
     }
     private fun stopConnection() {
         generation++
         commandJob?.cancel()
+        infoJob?.cancel()
         connectionJob?.cancel()
         session?.close()
         session = null
     }
     fun clearError() { mutableState.update { it.copy(error = null) } }
+    fun clearNotice() { mutableState.update { it.copy(notice = null) } }
     fun search() {
         if (scanJob?.isActive == true) return
         scanJob = viewModelScope.launch {
@@ -107,8 +111,17 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         val updated = tv.copy(name = name.trim().take(80).ifBlank { "Tivi nhà mình" },
             youtubeId = youtubeId.trim().take(160))
         mutableState.update { it.copy(tv = updated) }
+        viewModelScope.launch { if (updated.clientKey.isNotBlank()) save(updated) }
+    }
+    fun saveWakeMacs(raw: String) {
+        val tv = state.value.tv ?: return
+        val addresses = try { WakeProtocol.parseMacs(raw) }
+        catch (e: IllegalArgumentException) { mutableState.update { it.copy(error = e.message) }; return }
+        val updated = tv.copy(wakeMacs = addresses)
+        mutableState.update { it.copy(tv = updated, error = null) }
         viewModelScope.launch {
             if (updated.clientKey.isNotBlank()) save(updated)
+            mutableState.update { it.copy(notice = "Đã lưu tùy chọn bật tivi.") }
         }
     }
     private suspend fun save(tv: TvConfig) {
@@ -118,6 +131,25 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             mutableState.update { it.copy(error = "Đã kết nối nhưng chưa lưu được. Lần sau có thể cần ghép đôi lại.") }
         }
     }
+    private suspend fun learnWakeAddresses(current: WebOsSession, token: Int, quiet: Boolean) {
+        try {
+            val addresses = current.wakeAddresses()
+            if (generation != token) return
+            if (addresses.isEmpty()) throw TvException(ErrorKind.COMMAND,
+                "Tivi chưa cung cấp địa chỉ MAC. Bạn có thể nhập MAC trong tùy chọn bật tivi.")
+            val tv = state.value.tv ?: return
+            val updated = tv.copy(wakeMacs = (tv.wakeMacs + addresses).distinct().take(4))
+            mutableState.update { it.copy(tv = updated) }
+            save(updated)
+            if (!quiet) mutableState.update { it.copy(notice = "Đã đọc địa chỉ bật tivi.") }
+        } catch (e: CancellationException) { throw e }
+        catch (e: Exception) {
+            if (!quiet) throw TvException(ErrorKind.COMMAND,
+                "Chưa đọc được MAC từ tivi. Nhập MAC thủ công trong Cài đặt, hoặc ghép đôi lại để cấp quyền mới.", e)
+        }
+    }
+    fun readWakeAddresses() = command { learnWakeAddresses(it, generation, false) }
+
     private fun connect(initial: TvConfig, allowPairing: Boolean) {
         stopConnection()
         powerOffRequested = false
@@ -128,6 +160,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             var pairingAllowed = allowPairing
             var attempt = 0
             while (isActive && foreground && generation == token) {
+                target = state.value.tv ?: target
                 if (attempt > 0 && attempt % 3 == 1 && target.uid.isNotBlank()) {
                     try {
                         val relocated = discovery.scan().firstOrNull { it.uid == target.uid }
@@ -158,6 +191,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                     mutableState.update { it.copy(tv = target, connection = ConnectionState.CONNECTED,
                         status = "Đã kết nối", volume = VolumeState()) }
                     current.subscribeVolume()
+                    infoJob = launch { learnWakeAddresses(current, token, true) }
                     throw current.awaitClosed()
                 } catch (e: CancellationException) { throw e }
                 catch (e: Exception) {
@@ -168,6 +202,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                         status = if (powerOffRequested) "Tivi đã ngắt kết nối sau lệnh nguồn."
                         else problem?.message ?: "Chưa kết nối được tivi. Kiểm tra mạng nhà.") }
                 } finally {
+                    infoJob?.cancel()
                     current.close()
                     if (session === current) session = null
                 }
@@ -197,25 +232,52 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     fun volume(up: Boolean) = command { it.changeVolume(up) }
     fun mute() = command { it.toggleMute() }
     fun youtube() = command { it.launchYouTube(state.value.tv?.youtubeId.orEmpty()) }
-
-    /** Called only after the user confirms Tắt TV. Never interpret this as a toggle or wake command. */
     fun powerOff() = command { current ->
         powerOffRequested = true
         try {
             val acknowledged = current.requestPowerOff()
-            // Pause reconnect attempts after an intentional shutdown. Retry or reopening the app resumes them.
             connectionJob?.cancel()
+            infoJob?.cancel()
             current.close()
             if (session === current) session = null
             mutableState.update { it.copy(connection = ConnectionState.OFFLINE, busy = false,
-                status = if (acknowledged) "Tivi đã nhận yêu cầu tắt. Bật lại bằng remote thường."
-                else "Tivi đã ngắt kết nối; hãy kiểm tra màn hình để xác nhận đã tắt.") }
+                status = if (acknowledged) "Tivi đã nhận yêu cầu tắt."
+                    else "Tivi đã ngắt kết nối; hãy kiểm tra màn hình để xác nhận đã tắt.",
+                notice = if (acknowledged) "Tivi đã nhận yêu cầu tắt." else "Đã gửi yêu cầu tắt; hãy kiểm tra màn hình tivi.") }
         } catch (e: CancellationException) {
             powerOffRequested = false
             throw e
         } catch (e: Exception) {
             powerOffRequested = false
+            if (e is TvException && e.kind == ErrorKind.COMMAND) throw TvException(ErrorKind.COMMAND,
+                "Tivi chưa thực hiện lệnh tắt. Thử Cài đặt → Nhập IP / tùy chọn → Ghép đôi lại để cấp quyền nguồn.", e)
             throw e
+        }
+    }
+    fun powerOn() {
+        val tv = state.value.tv ?: return
+        if (state.value.busy || state.value.connection == ConnectionState.PAIRING) return
+        val token = generation
+        mutableState.update { it.copy(busy = true, error = null) }
+        commandJob = viewModelScope.launch {
+            var reconnect = false
+            try {
+                wakeOnLan.send(tv)
+                if (generation == token) {
+                    mutableState.update { it.copy(notice = "Đã gửi lệnh bật. Chấm xanh sẽ sáng khi kết nối được tivi.") }
+                    reconnect = state.value.connection != ConnectionState.CONNECTED
+                }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) {
+                if (generation == token) mutableState.update { it.copy(error =
+                    (e as? TvException)?.message ?: "Chưa gửi được lệnh bật. Kiểm tra mạng nhà và TV On With Mobile trên tivi.") }
+            } finally {
+                if (generation == token) mutableState.update { it.copy(busy = false) }
+            }
+            if (reconnect && foreground && generation == token) {
+                commandJob = null
+                retry()
+            }
         }
     }
     override fun onCleared() {

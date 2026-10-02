@@ -11,8 +11,8 @@ android {
         applicationId = "vn.ndang.lgfamilyremote"
         minSdk = 26
         targetSdk = 35
-        versionCode = (System.getenv("APP_VERSION_CODE") ?: "1").toInt()
-        versionName = "0.1.1"
+        versionCode = (System.getenv("APP_VERSION_CODE") ?: "7").toInt()
+        versionName = "0.2.0"
         vectorDrawables.useSupportLibrary = true
     }
     signingConfigs {
