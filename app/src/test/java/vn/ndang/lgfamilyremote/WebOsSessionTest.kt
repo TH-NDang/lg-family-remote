@@ -60,6 +60,36 @@ class WebOsSessionTest {
         } finally { client.close(); server.shutdown() }
     }
 
+    @Test fun concurrentRemoteRequestsAreMultiplexedWithoutGlobalLock() = runBlocking {
+        val server = MockWebServer()
+        val count = AtomicInteger()
+        server.enqueue(MockResponse().withWebSocketUpgrade(object : WebSocketListener() {
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                val j = JSONObject(text)
+                if (j.optString("type") == "register") {
+                    webSocket.send("""{"id":"register","type":"registered","payload":{"client-key":"key"}}""")
+                } else {
+                    count.incrementAndGet()
+                    launch {
+                        delay(if (j.optString("uri").endsWith("volumeUp")) 120 else 20)
+                        webSocket.send(JSONObject().put("id", j.getString("id")).put("type", "response")
+                            .put("payload", JSONObject().put("returnValue", true)).toString())
+                    }
+                }
+            }
+        }))
+        server.start()
+        val client = session(server)
+        try {
+            client.connect()
+            val up = async { client.request("audio/volumeUp") }
+            val down = async { client.request("audio/volumeDown") }
+            assertTrue(withTimeout(3000) { down.await() }.getBoolean("returnValue"))
+            assertTrue(withTimeout(3000) { up.await() }.getBoolean("returnValue"))
+            assertEquals(2, count.get())
+        } finally { client.close(); server.shutdown() }
+    }
+
     @Test fun disconnectFailsPendingCommandWithoutReplay() = runBlocking {
         val server = MockWebServer()
         val count = AtomicInteger()

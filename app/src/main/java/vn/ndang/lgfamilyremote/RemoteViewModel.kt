@@ -23,6 +23,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     private var connectionJob: Job? = null
     private var scanJob: Job? = null
     private var commandJob: Job? = null
+    private val remoteJobs = mutableSetOf<Job>()
     private var infoJob: Job? = null
     private var powerOffRequested = false
 
@@ -56,6 +57,8 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     private fun stopConnection() {
         generation++
         commandJob?.cancel()
+        remoteJobs.toList().forEach { it.cancel() }
+        remoteJobs.clear()
         infoJob?.cancel()
         connectionJob?.cancel()
         session?.close()
@@ -241,6 +244,32 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
+    /**
+     * Everyday remote presses must not toggle RemoteState.busy.
+     * Toggling busy disabled every Compose button and caused a visible gray flash/jank.
+     * WebOsSession already multiplexes requests by unique IDs, so short commands can overlap safely.
+     */
+    private fun remoteCommand(block: suspend (WebOsSession) -> Unit) {
+        val current = session
+        if (current == null || !current.isOpen || state.value.busy) return
+        val token = generation
+        lateinit var job: Job
+        job = viewModelScope.launch {
+            try {
+                block(current)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (generation == token) mutableState.update { it.copy(error =
+                    (e as? TvException)?.message ?: "Chưa gửi được lệnh. Hãy kiểm tra kết nối tivi.") }
+            } finally {
+                remoteJobs.remove(job)
+            }
+        }
+        remoteJobs.add(job)
+    }
+
+    /** Blocking operations are rare (power/setup) and may disable controls briefly. */
     private fun command(block: suspend (WebOsSession) -> Unit) {
         val current = session
         if (current == null || !current.isOpen || state.value.busy) return
@@ -257,10 +286,10 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
-    fun key(name: String) = command { it.button(name) }
-    fun volume(up: Boolean) = command { it.changeVolume(up) }
-    fun mute() = command { it.toggleMute() }
-    fun youtube() = command { it.launchYouTube(state.value.tv?.youtubeId.orEmpty()) }
+    fun key(name: String) = remoteCommand { it.button(name) }
+    fun volume(up: Boolean) = remoteCommand { it.changeVolume(up) }
+    fun mute() = remoteCommand { it.toggleMute() }
+    fun youtube() = remoteCommand { it.launchYouTube(state.value.tv?.youtubeId.orEmpty()) }
 
     fun powerToggle() {
         when (powerActionFor(state.value.connection, state.value.busy)) {

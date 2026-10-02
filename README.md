@@ -10,6 +10,11 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.2.4
+
+- Bấm phím remote không còn làm toàn bộ giao diện chuyển sang trạng thái disabled rồi bật lại.
+- Điều hướng, OK, Home, YouTube và âm lượng phản hồi mượt hơn; chỉ thao tác nguồn/thiết lập mới khóa giao diện khi cần.
+
 ## Mới trong 0.2.3
 
 - Màn hình remote chỉ giữ các điều khiển cần dùng; bỏ footer và các thông báo thành công không cần thiết.

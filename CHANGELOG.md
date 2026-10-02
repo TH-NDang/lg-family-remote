@@ -1,5 +1,14 @@
 # Thay đổi
 
+## 0.2.4 — 2026-10-02
+
+- Sửa hiện tượng màn hình “giật/chớp xám” mỗi lần bấm nút.
+- Các lệnh thường ngày (điều hướng, OK, Home, YouTube, tăng/giảm âm lượng, tắt tiếng) không còn thay đổi trạng thái `busy` của toàn màn hình.
+- Cho phép các lệnh ngắn chạy nối tiếp/đồng thời qua request ID riêng của phiên webOS; không khóa tất cả nút trong lúc chờ TV phản hồi.
+- Vẫn giữ khóa giao diện cho thao tác nguồn/thiết lập cần tính tuần tự.
+- Khi app rời foreground hoặc đổi kết nối, toàn bộ lệnh remote đang chờ được hủy để không tác động lên phiên mới.
+
+
 ## 0.2.3 — 2026-10-02
 
 - Tối giản màn hình remote cho người không rành công nghệ: bỏ footer “Không quảng cáo · Chỉ dùng mạng nhà”, bỏ card lỗi kỹ thuật khỏi màn hình chính và bỏ snackbar thành công.
