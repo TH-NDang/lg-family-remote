@@ -40,7 +40,7 @@ object LanRules {
 
 object Protocol {
     private val permissions = listOf("LAUNCH", "CONTROL_AUDIO", "CONTROL_INPUT_JOYSTICK",
-        "CONTROL_MOUSE_AND_KEYBOARD", "READ_INSTALLED_APPS", "READ_RUNNING_APPS", "READ_APP_STATUS",
+        "CONTROL_MOUSE_AND_KEYBOARD", "CONTROL_INPUT_TEXT", "READ_INSTALLED_APPS", "READ_RUNNING_APPS", "READ_APP_STATUS",
         "CONTROL_POWER", "READ_NETWORK_STATE")
     fun register(tv: TvConfig, pairing: PairingKind = PairingKind.PROMPT): String {
         val manifest = JSONObject().put("manifestVersion", 1).put("appVersion", "1.0")
