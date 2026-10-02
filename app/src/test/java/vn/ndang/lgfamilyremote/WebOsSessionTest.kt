@@ -111,6 +111,28 @@ class WebOsSessionTest {
         } finally { client.close(); server.shutdown() }
     }
 
+    @Test fun bootReconnectCanUseShortRegistrationTimeout() = runBlocking {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().withWebSocketUpgrade(object : WebSocketListener() {
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                // Accept the socket but deliberately never finish registration.
+            }
+        }))
+        server.start()
+        val client = session(server, false, "old-key")
+        try {
+            try {
+                withTimeout(2000) { client.connect(registrationTimeoutMs = 1000) }
+                fail("Expected wake reconnect timeout")
+            } catch (e: TvException) {
+                assertEquals(ErrorKind.NETWORK, e.kind)
+            }
+        } finally {
+            client.close()
+            server.shutdown()
+        }
+    }
+
     @Test fun backgroundReconnectDoesNotAcceptNewPairingPrompt() = runBlocking {
         val server = MockWebServer()
         server.enqueue(MockResponse().withWebSocketUpgrade(object : WebSocketListener() {

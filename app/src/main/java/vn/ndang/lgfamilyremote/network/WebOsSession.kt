@@ -49,7 +49,7 @@ class WebOsSession internal constructor(
             .followRedirects(false).followSslRedirects(false).build()
     }
 
-    suspend fun connect(): TvConfig {
+    suspend fun connect(registrationTimeoutMs: Long? = null): TvConfig {
         if (endpointOverrideForTests == null) LanRules.requireHost(tv.host)
         if (!allowPairing && (tv.clientKey.isBlank() || (tv.secure && tv.certificateSha256.isBlank()))) {
             throw TvException(ErrorKind.PAIRING_REQUIRED, "Cần xác nhận kết nối lại trên tivi.")
@@ -73,7 +73,8 @@ class WebOsSession internal constructor(
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) { fail(IOException("TV disconnected")) }
         })
         try {
-            return withTimeout(if (allowPairing) 60_000L else 12_000L) { registration.await() }
+            val timeoutMs = if (allowPairing) 60_000L else registrationTimeoutMs ?: 12_000L
+            return withTimeout(timeoutMs.coerceIn(1_000L, 60_000L)) { registration.await() }
         } catch (e: TimeoutCancellationException) {
             val error = TvException(if (allowPairing) ErrorKind.REJECTED else ErrorKind.NETWORK,
                 if (allowPairing) "Chưa ghép đôi được. Kiểm tra tivi đã bật và chọn Cho phép trên tivi."

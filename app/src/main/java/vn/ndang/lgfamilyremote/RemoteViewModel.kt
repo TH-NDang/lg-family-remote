@@ -226,26 +226,39 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    private fun connect(initial: TvConfig, allowPairing: Boolean) {
+    private fun connect(initial: TvConfig, allowPairing: Boolean, wakingUp: Boolean = false) {
         stopConnection()
         powerOffRequested = false
         val token = generation
-        mutableState.update { it.copy(tv = initial, error = null, busy = false, volume = VolumeState(),
-            pairing = null, pinSubmitting = false, pinError = null) }
+        val wakeDeadlineNanos = if (wakingUp) System.nanoTime() + 90_000_000_000L else Long.MAX_VALUE
+        mutableState.update { it.copy(
+            tv = initial,
+            error = null,
+            busy = false,
+            volume = VolumeState(),
+            pairing = null,
+            pinSubmitting = false,
+            pinError = null,
+            connection = if (wakingUp) ConnectionState.CONNECTING else it.connection,
+            status = if (wakingUp) "Đang chờ tivi bật…" else it.status
+        ) }
         connectionJob = viewModelScope.launch {
             var target = initial
             var pairingAllowed = allowPairing
             var attempt = 0
             while (isActive && foreground && generation == token) {
                 target = state.value.tv ?: target
-                if (attempt > 0 && attempt % 3 == 1 && target.uid.isNotBlank()) {
+                if (!wakingUp && attempt > 0 && attempt % 3 == 1 && target.uid.isNotBlank()) {
                     try {
                         val relocated = discovery.scan().firstOrNull { it.uid == target.uid }
                         if (relocated != null) target = target.copy(host = relocated.host)
                     } catch (e: CancellationException) { throw e } catch (_: Exception) { /* Retry saved IP. */ }
                 }
-                mutableState.update { it.copy(connection = ConnectionState.CONNECTING,
-                    status = if (attempt == 0) "Đang kết nối tivi…" else "Đang thử kết nối lại…") }
+                mutableState.update { it.copy(
+                    connection = ConnectionState.CONNECTING,
+                    status = if (wakingUp) "Đang chờ tivi bật…"
+                    else if (attempt == 0) "Đang kết nối tivi…" else "Đang thử kết nối lại…"
+                ) }
                 val builder = OkHttpClient.Builder()
                 localNetwork(getApplication())?.let { builder.socketFactory(it.socketFactory) }
                 val current = WebOsSession(target, pairingAllowed, builder,
@@ -263,7 +276,9 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                 session = current
                 var retryable = false
                 try {
-                    target = current.connect()
+                    target = current.connect(
+                        registrationTimeoutMs = if (wakingUp && !pairingAllowed) 4_500L else null
+                    )
                     ensureActive()
                     save(target)
                     pairingAllowed = false
@@ -282,11 +297,32 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                 catch (e: Exception) {
                     if (generation != token) break
                     val problem = e as? TvException
-                    retryable = !powerOffRequested && !pairingAllowed && (problem == null || problem.kind == ErrorKind.NETWORK)
-                    mutableState.update { it.copy(connection = ConnectionState.OFFLINE, busy = false,
-                        pairing = null, pinSubmitting = false,
-                        status = if (powerOffRequested) "Tivi đã ngắt kết nối sau lệnh nguồn."
-                        else problem?.message ?: "Chưa kết nối được tivi. Kiểm tra mạng nhà.") }
+                    val networkFailure = !powerOffRequested && !pairingAllowed &&
+                        (problem == null || problem.kind == ErrorKind.NETWORK)
+                    val wakeStillWaiting = !wakingUp || System.nanoTime() < wakeDeadlineNanos
+                    retryable = networkFailure && wakeStillWaiting
+                    if (wakingUp && retryable) {
+                        // Do not flash gray/offline while the TV is still booting.
+                        mutableState.update { it.copy(
+                            connection = ConnectionState.CONNECTING,
+                            busy = false,
+                            pairing = null,
+                            pinSubmitting = false,
+                            status = "Đang chờ tivi bật…"
+                        ) }
+                    } else {
+                        mutableState.update { it.copy(
+                            connection = ConnectionState.OFFLINE,
+                            busy = false,
+                            pairing = null,
+                            pinSubmitting = false,
+                            status = when {
+                                powerOffRequested -> "Tivi đã ngắt kết nối sau lệnh nguồn."
+                                wakingUp -> "Chưa kết nối lại được sau khi chờ tivi bật."
+                                else -> problem?.message ?: "Chưa kết nối được tivi. Kiểm tra mạng nhà."
+                            }
+                        ) }
+                    }
                 } finally {
                     infoJob?.cancel()
                     current.close()
@@ -294,7 +330,12 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                 }
                 if (!retryable) break
                 attempt++
-                delay(listOf(4000L, 8000L, 15000L, 30000L)[(attempt - 1).coerceAtMost(3)])
+                val retryDelay = if (wakingUp) {
+                    listOf(1500L, 2000L, 2500L, 3000L)[(attempt - 1).coerceAtMost(3)]
+                } else {
+                    listOf(4000L, 8000L, 15000L, 30000L)[(attempt - 1).coerceAtMost(3)]
+                }
+                delay(retryDelay)
             }
         }
     }
@@ -394,7 +435,10 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             }
             if (reconnect && foreground && generation == token) {
                 commandJob = null
-                retry()
+                val latest = state.value.tv ?: tv
+                val needsPairing = latest.clientKey.isBlank() ||
+                    (latest.secure && latest.certificateSha256.isBlank())
+                connect(latest, needsPairing, wakingUp = !needsPairing)
             }
         }
     }

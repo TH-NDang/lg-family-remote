@@ -10,6 +10,11 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.2.8
+
+- Cải thiện bật TV chậm: sau Wake-on-LAN, app giữ chấm ở trạng thái đang kết nối và tự thử lại nhanh trong tối đa khoảng 90 giây.
+- Khi TV hoàn tất khởi động, app tự chuyển chấm xanh; không cần bấm nút nguồn lần hai để “reload”.
+
 ## Mới trong 0.2.7
 
 - Thêm nút **Tìm kiếm** với biểu tượng mic. Mở ô tìm kiếm trên TV/YouTube, bấm mic trên điện thoại, nói tiếng Việt và app gửi chữ + Enter sang TV.

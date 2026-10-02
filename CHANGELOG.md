@@ -1,5 +1,15 @@
 # Thay đổi
 
+## 0.2.8 — 2026-10-02
+
+- Sửa trường hợp Wake-on-LAN đã đánh thức TV nhưng app chuyển chấm xám trước khi webOS sẵn sàng nhận kết nối.
+- Sau khi bấm bật, app giữ trạng thái **đang chờ tivi bật** và tự reconnect trong tối đa khoảng 90 giây.
+- Trong giai đoạn boot, timeout mỗi lần thử ngắn hơn và khoảng nghỉ chỉ khoảng 1.5–3 giây; không dùng backoff 4/8/15/30 giây như reconnect thông thường.
+- Chấm không chuyển xám giữa các lần thử. Khi webOS mở WebSocket thành công, app tự chuyển xanh và các nút điều khiển hoạt động mà không cần bấm nguồn lần hai.
+- Chỉ chuyển xám sau khi hết cửa sổ chờ hoặc gặp lỗi không phải lỗi mạng (ví dụ cần ghép đôi/chứng chỉ).
+- Thêm kiểm thử cho timeout reconnect nhanh khi TV đang boot.
+
+
 ## 0.2.7 — 2026-10-02
 
 - Thêm nút **Tìm kiếm** với mic trên màn hình remote.
