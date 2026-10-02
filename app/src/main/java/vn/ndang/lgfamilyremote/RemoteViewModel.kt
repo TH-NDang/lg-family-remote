@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -23,11 +25,39 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     private var connectionJob: Job? = null
     private var scanJob: Job? = null
     private var commandJob: Job? = null
-    private val remoteJobs = mutableSetOf<Job>()
     private var infoJob: Job? = null
+
+    private data class RemoteTask(
+        val generation: Int,
+        val block: suspend (WebOsSession) -> Unit
+    )
+
+    // Keep memory/request pressure bounded under rapid tapping.
+    // DROP_OLDEST favors what the user is doing now instead of replaying a long stale backlog.
+    private val remoteQueue = Channel<RemoteTask>(
+        capacity = 12,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
     private var powerOffRequested = false
 
     init {
+        viewModelScope.launch {
+            for (task in remoteQueue) {
+                if (task.generation != generation || state.value.busy) continue
+                val current = session
+                if (current == null || !current.isOpen) continue
+                try {
+                    task.block(current)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    if (task.generation == generation) {
+                        mutableState.update { it.copy(error =
+                            (e as? TvException)?.message ?: "Chưa gửi được lệnh. Hãy kiểm tra kết nối tivi.") }
+                    }
+                }
+            }
+        }
         viewModelScope.launch {
             try {
                 val saved = withContext(Dispatchers.IO) { store.load() }
@@ -57,13 +87,18 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     private fun stopConnection() {
         generation++
         commandJob?.cancel()
-        remoteJobs.toList().forEach { it.cancel() }
-        remoteJobs.clear()
+        drainRemoteQueue()
         infoJob?.cancel()
         connectionJob?.cancel()
         session?.close()
         session = null
     }
+    private fun drainRemoteQueue() {
+        while (remoteQueue.tryReceive().isSuccess) {
+            // Discard stale taps from the previous connection/session.
+        }
+    }
+
     fun clearError() { mutableState.update { it.copy(error = null) } }
     fun clearNotice() { mutableState.update { it.copy(notice = null) } }
     fun search() {
@@ -245,28 +280,14 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
     /**
-     * Everyday remote presses must not toggle RemoteState.busy.
-     * Toggling busy disabled every Compose button and caused a visible gray flash/jank.
-     * WebOsSession already multiplexes requests by unique IDs, so short commands can overlap safely.
+     * Everyday remote presses never toggle RemoteState.busy, so the UI stays visually stable.
+     * A single bounded worker serializes commands and prevents rapid tapping from creating
+     * an unbounded number of coroutines / in-flight WebSocket requests.
      */
     private fun remoteCommand(block: suspend (WebOsSession) -> Unit) {
         val current = session
         if (current == null || !current.isOpen || state.value.busy) return
-        val token = generation
-        lateinit var job: Job
-        job = viewModelScope.launch {
-            try {
-                block(current)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                if (generation == token) mutableState.update { it.copy(error =
-                    (e as? TvException)?.message ?: "Chưa gửi được lệnh. Hãy kiểm tra kết nối tivi.") }
-            } finally {
-                remoteJobs.remove(job)
-            }
-        }
-        remoteJobs.add(job)
+        remoteQueue.trySend(RemoteTask(generation, block))
     }
 
     /** Blocking operations are rare (power/setup) and may disable controls briefly. */
@@ -292,6 +313,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     fun youtube() = remoteCommand { it.launchYouTube(state.value.tv?.youtubeId.orEmpty()) }
 
     fun powerToggle() {
+        drainRemoteQueue()
         when (powerActionFor(state.value.connection, state.value.busy)) {
             PowerAction.TURN_OFF -> powerOff()
             PowerAction.TURN_ON -> powerOn()

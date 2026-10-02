@@ -1,5 +1,14 @@
 # Thay đổi
 
+## 0.2.5 — 2026-10-02
+
+- Sửa tình trạng app có thể tự thoát/crash khi thao tác liên tục ở 0.2.4.
+- Không còn tạo một coroutine/request song song mới cho mỗi lần chạm.
+- Các lệnh remote thường đi qua **một worker duy nhất** với hàng đợi giới hạn 12 thao tác; khi người dùng bấm quá nhanh, thao tác cũ nhất được bỏ thay vì tích tụ vô hạn.
+- Giao diện vẫn không dùng `busy` cho các phím thường nên không quay lại hiện tượng chớp xám.
+- Khi đổi kết nối, app ra nền hoặc bấm nguồn, hàng đợi thao tác cũ được xóa để không phát lại lên phiên mới.
+
+
 ## 0.2.4 — 2026-10-02
 
 - Sửa hiện tượng màn hình “giật/chớp xám” mỗi lần bấm nút.
