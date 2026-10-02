@@ -42,12 +42,13 @@ object Protocol {
     private val permissions = listOf("LAUNCH", "CONTROL_AUDIO", "CONTROL_INPUT_JOYSTICK",
         "CONTROL_MOUSE_AND_KEYBOARD", "READ_INSTALLED_APPS", "READ_RUNNING_APPS", "READ_APP_STATUS",
         "CONTROL_POWER", "READ_NETWORK_STATE")
-    fun register(tv: TvConfig): String {
+    fun register(tv: TvConfig, pairing: PairingKind = PairingKind.PROMPT): String {
         val manifest = JSONObject().put("manifestVersion", 1).put("appVersion", "1.0")
             .put("appId", "vn.ndang.lgfamilyremote")
             .put("localizedAppNames", JSONObject().put("", "Dieu khien TV"))
             .put("permissions", JSONArray(permissions))
-        val payload = JSONObject().put("forcePairing", false).put("pairingType", "PROMPT")
+        val payload = JSONObject().put("forcePairing", false)
+            .put("pairingType", if (pairing == PairingKind.PIN) "PIN" else "PROMPT")
             .put("manifest", manifest)
         if (tv.clientKey.isNotBlank()) payload.put("client-key", tv.clientKey)
         return JSONObject().put("id", "register").put("type", "register").put("payload", payload).toString()
@@ -55,6 +56,12 @@ object Protocol {
     fun request(id: String, uri: String, payload: JSONObject = JSONObject(), subscribe: Boolean = false): String =
         JSONObject().put("id", id).put("type", if (subscribe) "subscribe" else "request")
             .put("uri", "ssap://$uri").put("payload", payload).toString()
+    fun pinRequest(id: String, pin: String): String =
+        request(id, "pairing/setPin", JSONObject().put("pin", pin))
+    fun normalizePin(raw: String): String? {
+        val pin = raw.trim()
+        return pin.takeIf { it.length in 4..12 && it.all { ch -> ch.isDigit() } }
+    }
     fun button(key: String): String {
         require(key in setOf("UP", "DOWN", "LEFT", "RIGHT", "ENTER", "HOME", "BACK", "MUTE"))
         return "type:button\nname:$key\n\n"

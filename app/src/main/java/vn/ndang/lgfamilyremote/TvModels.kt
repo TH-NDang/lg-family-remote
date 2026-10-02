@@ -35,6 +35,7 @@ data class TvConfig(
 data class VolumeState(val level: Int? = null, val muted: Boolean? = null)
 enum class ErrorKind { NETWORK, PAIRING_REQUIRED, REJECTED, CERTIFICATE, COMMAND, PROTOCOL }
 class TvException(val kind: ErrorKind, message: String, cause: Throwable? = null) : IOException(message, cause)
+enum class PairingKind { PROMPT, PIN }
 enum class ConnectionState { IDLE, CONNECTING, PAIRING, CONNECTED, OFFLINE }
 data class RemoteState(
     val loaded: Boolean = false,
@@ -46,5 +47,8 @@ data class RemoteState(
     val searching: Boolean = false,
     val volume: VolumeState = VolumeState(),
     val busy: Boolean = false,
+    val pairing: PairingKind? = null,
+    val pinSubmitting: Boolean = false,
+    val pinError: String? = null,
     val notice: String? = null
 )

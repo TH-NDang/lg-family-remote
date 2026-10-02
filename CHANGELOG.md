@@ -1,5 +1,13 @@
 # Thay đổi
 
+## 0.2.1 — 2026-10-02
+
+- Thêm ghép đôi PIN: TV hiện mã, app mở ô nhập số và gửi qua ssap://pairing/setPin.
+- PIN không được ghi vào cấu hình; chỉ client-key do TV cấp sau khi ghép thành công được lưu như trước.
+- Lần sau tự kết nối bằng client-key, không hiện lại ô PIN trừ khi TV thu hồi quyền, app bị xóa dữ liệu hoặc người dùng chọn ghép đôi lại.
+- Vẫn hỗ trợ kiểu PROMPT: nếu TV yêu cầu xác nhận trực tiếp, app hiển thị hướng dẫn chọn **Cho phép** trên TV.
+- Thêm kiểm thử PIN đúng, PIN sai/thử lại, định dạng PIN và không lưu PIN.
+
 ## 0.2.0 — 2026-10-02
 
 - Giữ nút nguồn, xác nhận thao tác tắt, header cố định và chấm trạng thái của 0.1.1.

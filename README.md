@@ -10,6 +10,12 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.2.1
+
+- Hỗ trợ **PIN pairing** của LG webOS: khi TV yêu cầu PIN, app hiện hộp nhập mã. PIN chỉ tồn tại trong màn hình ghép đôi và **không được lưu**; sau khi TV trả client-key, app lưu khóa ghép đôi như trước để những lần sau tự kết nối.
+- Lần ghép mới/ghép lại ưu tiên yêu cầu PIN. Nếu firmware trả kiểu PROMPT, app vẫn chuyển về hướng dẫn **Cho phép trên tivi** như trước.
+- Sai PIN không được lưu và có thể nhập lại; app không tự phát lại PIN.
+
 ## Mới trong 0.2.0
 
 - **Nguồn** nằm trên header: chạm rồi chọn rõ **Bật tivi** hoặc **Tắt tivi**. Đóng hộp thoại không gửi lệnh; không vô tình tắt chỉ vì chạm biểu tượng.

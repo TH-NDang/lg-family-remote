@@ -40,12 +40,16 @@ fun RemoteApp(vm: RemoteViewModel) {
     var settings by rememberSaveable { mutableStateOf(false) }
     var confirm by remember { mutableStateOf("") }
     var powerMenu by rememberSaveable { mutableStateOf(false) }
+    var pin by rememberSaveable(state.tv?.host) { mutableStateOf("") }
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(state.connection) {
         if (state.connection == ConnectionState.CONNECTED) settings = false
     }
     LaunchedEffect(state.notice) {
         state.notice?.let { snackbar.showSnackbar(it); vm.clearNotice() }
+    }
+    LaunchedEffect(state.pairing, state.connection) {
+        if (state.pairing != PairingKind.PIN || state.connection == ConnectionState.CONNECTED) pin = ""
     }
     BackHandler(enabled = settings) { settings = false }
     Surface(Modifier.fillMaxSize()) {
@@ -101,6 +105,11 @@ fun RemoteApp(vm: RemoteViewModel) {
             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).widthIn(max = 460.dp).padding(16.dp))
         }
     }
+    if (state.connection == ConnectionState.PAIRING && state.pairing == PairingKind.PIN) {
+        PinPairingDialog(state = state, pin = pin,
+            onPinChange = { pin = it.filter(Char::isDigit).take(12) },
+            submit = { vm.submitPin(pin) }, cancel = vm::cancelPairing)
+    }
     if (powerMenu && state.tv != null) PowerDialog(state,
         close = { powerMenu = false },
         turnOn = { powerMenu = false; vm.powerOn() },
@@ -116,6 +125,42 @@ fun RemoteApp(vm: RemoteViewModel) {
             confirm = ""
         }) { Text("Tiếp tục") } },
         dismissButton = { TextButton(onClick = { confirm = "" }) { Text("Hủy") } }
+    )
+}
+
+@Composable
+private fun PinPairingDialog(state: RemoteState, pin: String, onPinChange: (String) -> Unit,
+                             submit: () -> Unit, cancel: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = {},
+        icon = { Icon(Icons.Default.Pin, null, tint = MaterialTheme.colorScheme.primary) },
+        title = { Text("Nhập mã trên tivi") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Nhập các chữ số đang hiện trên màn hình tivi. Mã này chỉ dùng cho lần ghép đôi hiện tại và không được lưu.")
+                OutlinedTextField(
+                    value = pin,
+                    onValueChange = onPinChange,
+                    label = { Text("Mã trên tivi") },
+                    placeholder = { Text("Ví dụ: 123456") },
+                    singleLine = true,
+                    enabled = !state.pinSubmitting,
+                    isError = state.pinError != null,
+                    supportingText = {
+                        Text(state.pinError ?: "Sau khi kết nối thành công, app chỉ lưu khóa ghép đôi để lần sau tự kết nối.")
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (state.pinSubmitting) LinearProgressIndicator(Modifier.fillMaxWidth())
+            }
+        },
+        confirmButton = {
+            Button(onClick = submit, enabled = pin.length in 4..12 && !state.pinSubmitting) {
+                Text(if (state.pinSubmitting) "Đang kết nối…" else "Kết nối")
+            }
+        },
+        dismissButton = { TextButton(onClick = cancel, enabled = !state.pinSubmitting) { Text("Hủy") } }
     )
 }
 
@@ -280,7 +325,7 @@ private fun SetupPanel(state: RemoteState, vm: RemoteViewModel, repair: () -> Un
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(Icons.Default.Tv, null, Modifier.size(38.dp), tint = MaterialTheme.colorScheme.primary)
             Text("Kết nối một lần", fontSize = 23.sp, fontWeight = FontWeight.Bold)
-            Text("Bật tivi bằng remote thường. Điện thoại và tivi cần dùng cùng mạng nhà. Sau khi chọn tivi, bấm Cho phép trên màn hình tivi.", fontSize = 17.sp)
+            Text("Bật tivi bằng remote thường và dùng cùng mạng nhà. Khi ghép lần đầu, tivi có thể hiện mã: nhập mã đó trên điện thoại. Nếu tivi chỉ hỏi quyền, chọn Cho phép.", fontSize = 17.sp)
             Button(onClick = vm::search, enabled = !state.searching && !connecting,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp)) {
                 if (state.searching) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)

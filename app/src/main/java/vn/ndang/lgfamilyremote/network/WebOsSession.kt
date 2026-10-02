@@ -19,8 +19,9 @@ class WebOsSession internal constructor(
     private val tv: TvConfig,
     private val allowPairing: Boolean,
     clientBuilder: OkHttpClient.Builder = OkHttpClient.Builder(),
-    private val onPairing: () -> Unit = {},
+    private val onPairing: (PairingKind) -> Unit = {},
     private val onVolume: (VolumeState) -> Unit = {},
+    private val pairingPreference: PairingKind = PairingKind.PIN,
     private val endpointOverrideForTests: String? = null
 ) {
     private val trust = CertificateTrust(tv.certificateSha256, allowPairing)
@@ -28,6 +29,7 @@ class WebOsSession internal constructor(
     private val registration = CompletableDeferred<TvConfig>()
     private val closed = CompletableDeferred<Throwable>()
     private val pointerLock = Mutex()
+    private val pinLock = Mutex()
     private val sequence = AtomicInteger()
     private val pending = ConcurrentHashMap<String, CompletableDeferred<JSONObject>>()
     @Volatile private var socket: WebSocket? = null
@@ -56,7 +58,8 @@ class WebOsSession internal constructor(
         socket = client.newWebSocket(Request.Builder().url(endpoint).build(), object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 if (closed.isCompleted) { webSocket.cancel(); return }
-                if (!webSocket.send(Protocol.register(tv))) fail(IOException("Registration send failed"))
+                val requested = if (allowPairing && tv.clientKey.isBlank()) pairingPreference else PairingKind.PROMPT
+                if (!webSocket.send(Protocol.register(tv, requested))) fail(IOException("Registration send failed"))
             }
             override fun onMessage(webSocket: WebSocket, text: String) {
                 if (closed.isCompleted) return
@@ -95,8 +98,9 @@ class WebOsSession internal constructor(
                 registered = true
                 registration.complete(tv.copy(clientKey = key,
                     certificateSha256 = if (tv.secure) trust.observedPin else ""))
-            } else if (payload.optString("pairingType") == "PROMPT") {
-                if (allowPairing) onPairing()
+            } else if (payload.has("pairingType")) {
+                val kind = if (payload.optString("pairingType").equals("PIN", true)) PairingKind.PIN else PairingKind.PROMPT
+                if (allowPairing) onPairing(kind)
                 else fail(TvException(ErrorKind.PAIRING_REQUIRED, "Tivi yêu cầu xác nhận lại. Mở Cài đặt để ghép đôi."))
             }
             return
@@ -109,6 +113,34 @@ class WebOsSession internal constructor(
         if (Protocol.isError(message)) waiting.completeExceptionally(TvException(ErrorKind.COMMAND,
             "Tivi không thực hiện được lệnh này. Có thể model hoặc ứng dụng chưa hỗ trợ."))
         else waiting.complete(payload)
+    }
+
+    suspend fun submitPin(raw: String) = pinLock.withLock {
+        val pin = Protocol.normalizePin(raw) ?: throw TvException(ErrorKind.REJECTED,
+            "Mã ghép đôi chưa đúng định dạng. Hãy nhập đúng các chữ số đang hiện trên tivi.")
+        if (!allowPairing || registered || closed.isCompleted) throw TvException(ErrorKind.PAIRING_REQUIRED,
+            "Tivi hiện không chờ mã ghép đôi. Hãy bắt đầu ghép đôi lại.")
+        val id = "pin${sequence.incrementAndGet()}"
+        val result = CompletableDeferred<JSONObject>()
+        pending[id] = result
+        try {
+            if (socket?.send(Protocol.pinRequest(id, pin)) != true) {
+                throw TvException(ErrorKind.NETWORK, "Đã mất kết nối với tivi trước khi gửi mã.")
+            }
+            try {
+                withTimeout(8000) { result.await() }
+            } catch (e: TimeoutCancellationException) {
+                if (!registered) throw TvException(ErrorKind.REJECTED,
+                    "Tivi chưa chấp nhận mã. Kiểm tra mã trên màn hình tivi rồi thử lại.", e)
+            }
+        } catch (e: TvException) {
+            if (e.kind == ErrorKind.COMMAND) throw TvException(ErrorKind.REJECTED,
+                "Mã chưa đúng hoặc đã hết hạn. Hãy nhập mã mới đang hiện trên tivi.", e)
+            throw e
+        } finally {
+            pending.remove(id)
+            result.cancel()
+        }
     }
 
     suspend fun request(uri: String, payload: JSONObject = JSONObject()): JSONObject = requestInternal(uri, payload)

@@ -50,6 +50,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         stopConnection()
         scanJob?.cancel()
         mutableState.update { it.copy(connection = ConnectionState.OFFLINE, busy = false, notice = null,
+            pairing = null, pinSubmitting = false, pinError = null,
             status = if (it.tv == null) "Chưa kết nối tivi" else "Sẽ tự kết nối khi mở app") }
     }
     private fun stopConnection() {
@@ -93,6 +94,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     fun cancelPairing() {
         stopConnection()
         mutableState.update { it.copy(connection = ConnectionState.OFFLINE, busy = false,
+            pairing = null, pinSubmitting = false, pinError = null,
             status = "Đã dừng kết nối. Bấm Thử lại khi sẵn sàng.") }
     }
     fun forget() {
@@ -150,11 +152,33 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     }
     fun readWakeAddresses() = command { learnWakeAddresses(it, generation, false) }
 
+    fun submitPin(pin: String) {
+        val current = session ?: return
+        if (state.value.connection != ConnectionState.PAIRING || state.value.pairing != PairingKind.PIN ||
+            state.value.pinSubmitting) return
+        val token = generation
+        mutableState.update { it.copy(pinSubmitting = true, pinError = null) }
+        commandJob?.cancel()
+        commandJob = viewModelScope.launch {
+            try {
+                current.submitPin(pin)
+                if (generation == token) mutableState.update { it.copy(status = "Đang hoàn tất kết nối…") }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) {
+                if (generation == token) mutableState.update { it.copy(pinError =
+                    (e as? TvException)?.message ?: "Chưa gửi được mã. Hãy thử lại.") }
+            } finally {
+                if (generation == token) mutableState.update { it.copy(pinSubmitting = false) }
+            }
+        }
+    }
+
     private fun connect(initial: TvConfig, allowPairing: Boolean) {
         stopConnection()
         powerOffRequested = false
         val token = generation
-        mutableState.update { it.copy(tv = initial, error = null, busy = false, volume = VolumeState()) }
+        mutableState.update { it.copy(tv = initial, error = null, busy = false, volume = VolumeState(),
+            pairing = null, pinSubmitting = false, pinError = null) }
         connectionJob = viewModelScope.launch {
             var target = initial
             var pairingAllowed = allowPairing
@@ -172,9 +196,12 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                 val builder = OkHttpClient.Builder()
                 localNetwork(getApplication())?.let { builder.socketFactory(it.socketFactory) }
                 val current = WebOsSession(target, pairingAllowed, builder,
-                    onPairing = {
+                    onPairing = { kind ->
                         if (generation == token) mutableState.update { it.copy(
-                            connection = ConnectionState.PAIRING, status = "Hãy chọn Cho phép trên màn hình tivi") }
+                            connection = ConnectionState.PAIRING, pairing = kind,
+                            pinSubmitting = false, pinError = null,
+                            status = if (kind == PairingKind.PIN) "Nhập mã đang hiện trên tivi"
+                                else "Hãy chọn Cho phép trên màn hình tivi") }
                     },
                     onVolume = { value ->
                         if (generation == token) mutableState.update { it.copy(volume = VolumeState(
@@ -189,7 +216,8 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                     pairingAllowed = false
                     attempt = 0
                     mutableState.update { it.copy(tv = target, connection = ConnectionState.CONNECTED,
-                        status = "Đã kết nối", volume = VolumeState()) }
+                        status = "Đã kết nối", volume = VolumeState(), pairing = null,
+                        pinSubmitting = false, pinError = null) }
                     current.subscribeVolume()
                     infoJob = launch { learnWakeAddresses(current, token, true) }
                     throw current.awaitClosed()
@@ -199,6 +227,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                     val problem = e as? TvException
                     retryable = !powerOffRequested && !pairingAllowed && (problem == null || problem.kind == ErrorKind.NETWORK)
                     mutableState.update { it.copy(connection = ConnectionState.OFFLINE, busy = false,
+                        pairing = null, pinSubmitting = false,
                         status = if (powerOffRequested) "Tivi đã ngắt kết nối sau lệnh nguồn."
                         else problem?.message ?: "Chưa kết nối được tivi. Kiểm tra mạng nhà.") }
                 } finally {
