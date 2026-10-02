@@ -1,24 +1,21 @@
 name: Build Android APK
-
 on:
   push:
     branches: [main]
     tags: ['v*']
+    paths-ignore: ['**/*.md', '.github/dependabot.yml']
   pull_request:
   workflow_dispatch:
     inputs:
       publish_release:
-        description: 'Publish an APK to GitHub Releases (preview if no signing secret)'
+        description: 'Publish APK to Releases (preview if no signing secret)'
         type: boolean
         default: true
-
 permissions:
   contents: read
-
 concurrency:
   group: android-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
   build:
     name: Test, lint and build APK
@@ -40,6 +37,11 @@ jobs:
         with:
           gradle-version: '8.11.1'
           cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Provision Android command-line tools
+        uses: android-actions/setup-android@v4.0.4
+        with:
+          cmdline-tools-version: '12266719'
+          log-accepted-android-sdk-licenses: false
       - name: Install Android SDK 35
         shell: bash
         run: |
@@ -103,12 +105,12 @@ jobs:
           {
             echo '# Điều khiển TV'
             echo
-            echo 'Tải file APK bên dưới và cài trên điện thoại Android 8 trở lên.'
+            echo 'Tải APK bên dưới, cài trên điện thoại Android 8 trở lên.'
             echo 'Cùng mạng nhà → chọn tivi LG webOS → chọn Cho phép trên tivi.'
             echo
             echo '**Chưa xác nhận tương thích trên tivi vật lý của gia đình.**'
             if [ "$SIGNED" != true ]; then
-              echo 'Đây là bản thử dùng khóa debug tạm; bản thử ở lần build khác có thể cần gỡ bản cũ và ghép đôi lại.'
+              echo 'Bản thử dùng khóa debug tạm; lần build khác có thể cần gỡ bản cũ và ghép đôi lại.'
               echo 'Bản dùng lâu dài cần ANDROID_SIGNING_BUNDLE. Xem docs/SIGNING.md.'
             fi
             echo
