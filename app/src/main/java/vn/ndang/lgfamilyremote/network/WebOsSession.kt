@@ -214,6 +214,16 @@ class WebOsSession internal constructor(
         if (!isOpen || !ws.send(message)) throw TvException(ErrorKind.NETWORK, "Đã mất kết nối với tivi.")
     }
 
+    suspend fun voiceSearch(raw: String) {
+        val text = raw.trim().replace(Regex("\\s+"), " ").take(200)
+        if (text.isBlank()) return
+        request(
+            "com.webos.service.ime/insertText",
+            JSONObject().put("text", text).put("replace", 0)
+        )
+        request("com.webos.service.ime/sendEnterKey")
+    }
+
     suspend fun launchYouTube(overrideId: String): String {
         val discovered = if (overrideId.isBlank()) {
             try { Protocol.youtubeApp(request("com.webos.applicationManager/listApps")) }
