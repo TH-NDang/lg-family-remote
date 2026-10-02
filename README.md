@@ -10,6 +10,12 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.2.2
+
+- Sửa đọc MAC cho payload LG phổ biến wifiInfo / wiredInfo; trước đây app chỉ đọc wifi / wired nên có thể báo sai “chưa có MAC”.
+- Wake-on-LAN dùng nhiều đường gửi trong cùng LAN: limited broadcast, broadcast theo subnet thật và unicast tới IP TV; gửi trên UDP 9 và 7.
+- Nếu chưa lưu MAC, app sẽ cố lấy MAC trước khi tắt TV. Nếu không lấy được, app giữ TV đang bật và yêu cầu ghép đôi lại hoặc nhập MAC thủ công.
+
 ## Mới trong 0.2.1
 
 - Hỗ trợ **PIN pairing** của LG webOS: khi TV yêu cầu PIN, app hiện hộp nhập mã. PIN chỉ tồn tại trong màn hình ghép đôi và **không được lưu**; sau khi TV trả client-key, app lưu khóa ghép đôi như trước để những lần sau tự kết nối.

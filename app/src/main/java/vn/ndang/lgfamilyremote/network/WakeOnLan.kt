@@ -45,9 +45,36 @@ object WakeProtocol {
             repeat(16) { bytes.copyInto(packet, 6 + it * 6) }
         }
     }
-    fun fromConnectionInfo(payload: JSONObject): List<String> = listOf("wired", "wifi")
-        .mapNotNull { payload.optJSONObject(it)?.optString("macAddress") }
-        .mapNotNull(::normalizeMac).distinct()
+    /**
+     * LG firmware is inconsistent here:
+     * newer TVs commonly return wifiInfo/wiredInfo, while some older examples use wifi/wired.
+     * Only inspect TV-interface fields; never accidentally persist a gateway/router MAC.
+     */
+    fun fromConnectionInfo(payload: JSONObject): List<String> {
+        val containers = listOfNotNull(
+            payload,
+            payload.optJSONObject("networkInfo"),
+            payload.optJSONObject("connectionInfo")
+        )
+        val keys = listOf("wifiInfo", "wiredInfo", "wifi", "wired", "ethernetInfo")
+        val values = mutableListOf<String>()
+        for (container in containers) {
+            for (key in keys) {
+                container.optJSONObject(key)?.optString("macAddress")
+                    ?.takeIf { it.isNotBlank() }?.let(values::add)
+            }
+            container.optString("macAddress").takeIf { it.isNotBlank() }?.let(values::add)
+        }
+        return values.mapNotNull(::normalizeMac).distinct()
+    }
+
+    fun deliveryTargets(local: String?, prefix: Int?, tvIp: String): List<String> {
+        val result = linkedSetOf<String>()
+        result += "255.255.255.255"
+        if (local != null && prefix != null) broadcastFor(local, prefix, tvIp)?.let(result::add)
+        if (LanRules.isPrivateIpv4(tvIp)) result += tvIp
+        return result.toList()
+    }
 
     /** Only derive broadcasts for a matching local IPv4 subnet; never assume /24. */
     fun broadcastFor(local: String, prefix: Int, target: String): String? {
@@ -67,35 +94,42 @@ class WakeOnLan(private val context: Context) {
         LanRules.requireHost(tv.host)
         val macs = tv.wakeMacs.mapNotNull(WakeProtocol::normalizeMac).distinct().take(4)
         if (macs.isEmpty()) throw TvException(ErrorKind.COMMAND,
-            "Chưa có địa chỉ MAC để bật tivi. Bật tivi bằng remote thường để app thử đọc tự động, hoặc nhập MAC trong Cài đặt → Nhập IP / tùy chọn.")
+            "Chưa có địa chỉ MAC để bật tivi. Khi TV đang bật, app sẽ thử đọc lại tự động; bạn cũng có thể nhập MAC trong Cài đặt → Nhập IP / tùy chọn.")
         val network = localNetwork(context) ?: throw TvException(ErrorKind.NETWORK,
             "Hãy kết nối điện thoại với Wi-Fi nhà để bật tivi.")
         val manager = context.getSystemService(ConnectivityManager::class.java)
-        val broadcasts = linkedSetOf("255.255.255.255")
+        val targets = linkedSetOf<String>()
+        targets += "255.255.255.255"
         manager.getLinkProperties(network)?.linkAddresses?.forEach { link ->
             if (link.address is Inet4Address) {
-                WakeProtocol.broadcastFor(link.address.hostAddress.orEmpty(), link.prefixLength, tv.host)
-                    ?.let(broadcasts::add)
+                WakeProtocol.deliveryTargets(link.address.hostAddress.orEmpty(), link.prefixLength, tv.host)
+                    .forEach(targets::add)
             }
         }
-        val addresses = broadcasts.map(InetAddress::getByName)
+        targets += tv.host
+        val addresses = targets.mapNotNull { runCatching { InetAddress.getByName(it) }.getOrNull() }
+        val ports = intArrayOf(9, 7)
         var sent = false
         DatagramSocket(null).use { socket ->
             network.bindSocket(socket)
             socket.bind(InetSocketAddress(0))
             socket.broadcast = true
-            repeat(3) { attempt ->
+            repeat(5) { attempt ->
                 ensureActive()
                 for (mac in macs) {
                     val bytes = WakeProtocol.packet(mac)
                     for (address in addresses) {
-                        try {
-                            socket.send(DatagramPacket(bytes, bytes.size, address, 9))
-                            sent = true
-                        } catch (_: java.io.IOException) { /* Try the other local broadcast address. */ }
+                        for (port in ports) {
+                            try {
+                                socket.send(DatagramPacket(bytes, bytes.size, address, port))
+                                sent = true
+                            } catch (_: java.io.IOException) {
+                                // Continue through the local delivery plan.
+                            }
+                        }
                     }
                 }
-                if (attempt < 2) delay(150)
+                if (attempt < 4) delay(200)
             }
         }
         if (!sent) throw TvException(ErrorKind.NETWORK, "Chưa gửi được lệnh bật tivi. Kiểm tra Wi-Fi nhà.")

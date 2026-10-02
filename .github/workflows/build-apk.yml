@@ -68,7 +68,7 @@ jobs:
           (cd out/preview && sha256sum *.apk > SHA256SUMS.txt)
           if [ -f app/build/outputs/apk/release/app-release.apk ]; then
             mkdir -p out/release
-            cp app/build/outputs/apk/release/app-release.apk out/release/lg-family-remote-v0.2.1.apk
+            cp app/build/outputs/apk/release/app-release.apk out/release/lg-family-remote-v0.2.2.apk
             (cd out/release && sha256sum *.apk > SHA256SUMS.txt)
           fi
       - name: Upload preview APK
@@ -96,23 +96,25 @@ jobs:
           set -euo pipefail
           TAG="preview-${GITHUB_RUN_NUMBER}"
           DIR=out/preview
-          TITLE="Điều khiển TV 0.2.1 · bản thử #${GITHUB_RUN_NUMBER}"
+          TITLE="Điều khiển TV 0.2.2 · bản thử #${GITHUB_RUN_NUMBER}"
           if [ "$SIGNED" = true ]; then
             TAG="family-${GITHUB_RUN_NUMBER}"
             DIR=out/release
-            TITLE="Điều khiển TV 0.2.1 · bản ký riêng #${GITHUB_RUN_NUMBER}"
+            TITLE="Điều khiển TV 0.2.2 · bản ký riêng #${GITHUB_RUN_NUMBER}"
           fi
           {
-            echo '# Điều khiển TV 0.2.1'
+            echo '# Điều khiển TV 0.2.2'
             echo
             echo 'Mới: hỗ trợ PIN pairing: TV hiện mã → nhập trên điện thoại → lưu client-key → lần sau tự kết nối.'
             echo 'Nút nguồn trên header: Bật tivi bằng Wake-on-LAN, Tắt tivi bằng webOS.'
             echo 'Trạng thái kết nối chỉ còn chấm nhỏ trên header; thiết lập nằm trong bánh răng.'
-            echo 'App thử đọc MAC tự động. Bật qua mạng cần TV On With Mobile / Turn on via Wi-Fi; tùy model.'
+            echo 'Sửa đọc MAC trên LG dùng wifiInfo/wiredInfo; vẫn hỗ trợ wifi/wired cũ.'
+            echo 'Wake-on-LAN gửi broadcast + directed broadcast + unicast qua UDP 9 và 7.'
+            echo 'Trước khi tắt, nếu chưa có MAC app sẽ lấy/lưu MAC trước; thất bại thì không tắt để tránh bị kẹt.'
             echo
             echo 'Android 8 trở lên. Cùng mạng nhà → chọn tivi LG webOS → chọn Cho phép trên tivi.'
             echo 'Nếu tivi yêu cầu quyền nguồn mới: Cài đặt → Nhập IP / tùy chọn → Ghép đôi lại.'
-            echo 'Người dùng đã xác nhận bản 0.1.0 hoạt động; chức năng nguồn 0.2.1 cần thử trên tivi thực tế.'
+            echo 'Người dùng đã xác nhận bản 0.1.0 hoạt động; chức năng nguồn 0.2.2 cần thử trên tivi thực tế.'
             if [ "$SIGNED" != true ]; then
               echo 'Bản thử dùng khóa debug tạm; nếu không cập nhật đè được, cần gỡ bản thử cũ và ghép đôi lại.'
               echo 'Bản dùng lâu dài cần ANDROID_SIGNING_BUNDLE. Xem docs/SIGNING.md.'

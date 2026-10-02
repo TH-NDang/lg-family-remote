@@ -143,7 +143,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             val updated = tv.copy(wakeMacs = (tv.wakeMacs + addresses).distinct().take(4))
             mutableState.update { it.copy(tv = updated) }
             save(updated)
-            if (!quiet) mutableState.update { it.copy(notice = "Đã đọc địa chỉ bật tivi.") }
+            if (!quiet) mutableState.update { it.copy(notice = "Đã lưu ${updated.wakeMacs.size} địa chỉ MAC để bật lại tivi.") }
         } catch (e: CancellationException) { throw e }
         catch (e: Exception) {
             if (!quiet) throw TvException(ErrorKind.COMMAND,
@@ -264,6 +264,16 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     fun powerOff() = command { current ->
         powerOffRequested = true
         try {
+            if (state.value.tv?.wakeMacs.isNullOrEmpty()) {
+                learnWakeAddresses(current, generation, true)
+            }
+            if (state.value.tv?.wakeMacs.isNullOrEmpty()) {
+                powerOffRequested = false
+                throw TvException(
+                    ErrorKind.COMMAND,
+                    "App chưa lấy được địa chỉ MAC của tivi nên chưa tắt để tránh không bật lại được. Hãy ghép đôi lại hoặc nhập MAC trong Cài đặt."
+                )
+            }
             val acknowledged = current.requestPowerOff()
             connectionJob?.cancel()
             infoJob?.cancel()

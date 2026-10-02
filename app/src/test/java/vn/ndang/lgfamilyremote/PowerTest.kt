@@ -40,10 +40,26 @@ class PowerTest {
             assertArrayEquals(byteArrayOf(2, 17, 34, 51, 68, 85), packet.copyOfRange(6 + it * 6, 12 + it * 6))
         }
     }
-    @Test fun readsOnlyTheTvNetworkInterfaces() {
-        val payload = JSONObject("""{"wired":{"macAddress":"aa:bb:cc:dd:ee:02"},"wifi":{"macAddress":"02:11:22:33:44:55"},"gateway":{"macAddress":"02:22:22:22:22:22"}}""")
-        assertEquals(listOf("AA:BB:CC:DD:EE:02", "02:11:22:33:44:55"), WakeProtocol.fromConnectionInfo(payload))
+    @Test fun readsModernLgWifiInfoAndWiredInfo() {
+        val payload = JSONObject("""{"wifiInfo":{"macAddress":"02:11:22:33:44:55"},"wiredInfo":{"macAddress":"aa:bb:cc:dd:ee:02"},"gateway":{"macAddress":"02:22:22:22:22:22"}}""")
+        assertEquals(listOf("02:11:22:33:44:55", "AA:BB:CC:DD:EE:02"), WakeProtocol.fromConnectionInfo(payload))
+        assertFalse(WakeProtocol.fromConnectionInfo(payload).contains("02:22:22:22:22:22"))
+    }
+
+    @Test fun stillReadsLegacyWifiAndWiredAliases() {
+        val payload = JSONObject("""{"wired":{"macAddress":"aa:bb:cc:dd:ee:02"},"wifi":{"macAddress":"02:11:22:33:44:55"}}""")
+        assertEquals(
+            setOf("AA:BB:CC:DD:EE:02", "02:11:22:33:44:55"),
+            WakeProtocol.fromConnectionInfo(payload).toSet()
+        )
         assertEquals(emptyList<String>(), WakeProtocol.fromConnectionInfo(JSONObject()))
+    }
+
+    @Test fun wakeDeliveryIncludesBroadcastSubnetAndUnicast() {
+        assertEquals(
+            listOf("255.255.255.255", "192.168.1.255", "192.168.1.20"),
+            WakeProtocol.deliveryTargets("192.168.1.7", 24, "192.168.1.20")
+        )
     }
     @Test fun broadcastUsesActualSubnetPrefix() {
         assertEquals("192.168.1.255", WakeProtocol.broadcastFor("192.168.1.7", 24, "192.168.1.20"))
@@ -124,7 +140,7 @@ class PowerTest {
         }
     }
     @Test fun wakeAddressDiscoveryUsesNetworkInfoEndpoint() = runBlocking {
-        withTv({ ws, j -> response(ws, j, JSONObject("""{"returnValue":true,"wifi":{"macAddress":"02:11:22:33:44:55"}}""")) }) { client, seen ->
+        withTv({ ws, j -> response(ws, j, JSONObject("""{"returnValue":true,"wifiInfo":{"macAddress":"02:11:22:33:44:55"}}""")) }) { client, seen ->
             assertEquals(listOf("02:11:22:33:44:55"), client.wakeAddresses())
             assertEquals("ssap://com.webos.service.connectionmanager/getinfo", seen.single().getString("uri"))
         }

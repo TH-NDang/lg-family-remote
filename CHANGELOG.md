@@ -1,5 +1,14 @@
 # Thay đổi
 
+## 0.2.2 — 2026-10-02
+
+- Sửa lỗi chính khiến app báo không có MAC trên nhiều LG webOS: hỗ trợ đúng wifiInfo / wiredInfo, đồng thời giữ wifi / wired cho firmware cũ.
+- Không đọc MAC của gateway/router khi phân tích dữ liệu mạng TV.
+- Wake-on-LAN gửi tới limited broadcast, broadcast đúng subnet và IP TV (unicast), trên cả UDP 9 và UDP 7, lặp 5 đợt ngắn.
+- Nếu chưa có MAC, khi bấm Tắt TV app thử lấy và lưu MAC trước. Nếu vẫn không lấy được thì không tắt TV, tránh tình trạng tắt được nhưng không thể bật lại.
+- Bổ sung test cho cấu trúc dữ liệu MAC thực tế của LG và kế hoạch gửi Wake-on-LAN.
+
+
 ## 0.2.1 — 2026-10-02
 
 - Thêm ghép đôi PIN: TV hiện mã, app mở ô nhập số và gửi qua ssap://pairing/setPin.
