@@ -136,6 +136,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             status = "Đã dừng kết nối. Bấm Thử lại khi sẵn sàng.") }
     }
     fun forget() {
+        pendingVoiceQuery = null
         stopConnection()
         viewModelScope.launch {
             try {
@@ -189,6 +190,19 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
     fun readWakeAddresses() = command { learnWakeAddresses(it, generation, false) }
+
+    fun voiceSearch(raw: String) {
+        val query = raw.trim().replace(Regex("\\s+"), " ").take(200)
+        if (query.isBlank()) return
+        pendingVoiceQuery = query
+        if (state.value.connection == ConnectionState.CONNECTED && session?.isOpen == true && !state.value.busy) {
+            pendingVoiceQuery = null
+            remoteCommand { it.voiceSearch(query) }
+        } else if (foreground && state.value.tv != null &&
+            state.value.connection in listOf(ConnectionState.IDLE, ConnectionState.OFFLINE)) {
+            retry()
+        }
+    }
 
     fun submitPin(pin: String) {
         val current = session ?: return
@@ -258,6 +272,10 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                         pinSubmitting = false, pinError = null) }
                     current.subscribeVolume()
                     infoJob = launch { learnWakeAddresses(current, token, true) }
+                    pendingVoiceQuery?.let { query ->
+                        pendingVoiceQuery = null
+                        remoteQueue.trySend(RemoteTask(token) { it.voiceSearch(query) })
+                    }
                     throw current.awaitClosed()
                 } catch (e: CancellationException) { throw e }
                 catch (e: Exception) {
