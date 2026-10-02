@@ -1,0 +1,140 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Publish an APK to GitHub Releases (preview if no signing secret)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test, lint and build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    env:
+      APP_VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6.0.1
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v6.4.0
+        with:
+          gradle-version: '8.11.1'
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Install Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+          printf 'sdk.dir=%s\n' "$ANDROID_HOME" > local.properties
+      - name: Unit tests, lint and preview APK
+        run: gradle --no-daemon --stacktrace testDebugUnitTest lintDebug assembleDebug
+      - name: Prepare optional release signing
+        id: signing
+        if: github.event_name != 'pull_request'
+        env:
+          ANDROID_SIGNING_BUNDLE: ${{ secrets.ANDROID_SIGNING_BUNDLE }}
+        run: python3 scripts/prepare_signing.py
+      - name: Build signed family APK
+        if: steps.signing.outputs.ready == 'true'
+        run: gradle --no-daemon --stacktrace lintRelease assembleRelease
+      - name: Collect APKs and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/preview
+          cp app/build/outputs/apk/debug/app-debug.apk out/preview/lg-family-remote-preview.apk
+          (cd out/preview && sha256sum *.apk > SHA256SUMS.txt)
+          if [ -f app/build/outputs/apk/release/app-release.apk ]; then
+            mkdir -p out/release
+            cp app/build/outputs/apk/release/app-release.apk out/release/lg-family-remote-v0.1.0.apk
+            (cd out/release && sha256sum *.apk > SHA256SUMS.txt)
+          fi
+      - name: Upload preview APK
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: preview-apk
+          path: out/preview/*
+          retention-days: 30
+          if-no-files-found: error
+      - name: Upload signed family APK
+        if: steps.signing.outputs.ready == 'true'
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: signed-family-apk
+          path: out/release/*
+          retention-days: 30
+          if-no-files-found: error
+      - name: Publish installable APK
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SIGNED: ${{ steps.signing.outputs.ready }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="preview-${GITHUB_RUN_NUMBER}"
+          DIR=out/preview
+          TITLE="Điều khiển TV 0.1.0 · bản thử #${GITHUB_RUN_NUMBER}"
+          if [ "$SIGNED" = true ]; then
+            TAG="family-${GITHUB_RUN_NUMBER}"
+            DIR=out/release
+            TITLE="Điều khiển TV 0.1.0 · bản ký riêng #${GITHUB_RUN_NUMBER}"
+          fi
+          {
+            echo '# Điều khiển TV'
+            echo
+            echo 'Tải file APK bên dưới và cài trên điện thoại Android 8 trở lên.'
+            echo 'Cùng mạng nhà → chọn tivi LG webOS → chọn Cho phép trên tivi.'
+            echo
+            echo '**Chưa xác nhận tương thích trên tivi vật lý của gia đình.**'
+            if [ "$SIGNED" != true ]; then
+              echo 'Đây là bản thử dùng khóa debug tạm; bản thử ở lần build khác có thể cần gỡ bản cũ và ghép đôi lại.'
+              echo 'Bản dùng lâu dài cần ANDROID_SIGNING_BUNDLE. Xem docs/SIGNING.md.'
+            fi
+            echo
+            echo "Commit: ${GITHUB_SHA}"
+            echo "Build: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          } > release-notes.md
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$DIR"/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "$DIR"/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "$TITLE" --prerelease --notes-file release-notes.md
+          fi
+      - name: Upload test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: quality-reports
+          path: |
+            app/build/reports/
+            app/build/test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Summarize verification
+        if: always()
+        run: python3 scripts/test_summary.py
+      - name: Remove signing material
+        if: always()
+        shell: bash
+        run: rm -rf "$RUNNER_TEMP/family-signing"
