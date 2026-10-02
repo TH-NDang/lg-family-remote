@@ -10,6 +10,12 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.2.7
+
+- Thêm nút **Tìm kiếm** với biểu tượng mic. Mở ô tìm kiếm trên TV/YouTube, bấm mic trên điện thoại, nói tiếng Việt và app gửi chữ + Enter sang TV.
+- Dùng trình nhận dạng giọng nói hệ thống của Android; app không tự ghi âm nền và không lưu bản ghi âm.
+- Nếu TV đã ghép từ bản cũ nhưng từ chối nhập chữ, vào Cài đặt → Ghép đôi lại một lần để cấp `CONTROL_INPUT_TEXT`.
+
 ## Mới trong 0.2.6
 
 - Thêm icon ứng dụng hình remote dễ nhận biết trên màn hình chính Android, cùng phong cách xanh–tím đã duyệt.
@@ -56,7 +62,7 @@ Sau khi yêu cầu tắt TV, app dừng thử kết nối lại để tránh qu�
 
 1. Bật tivi bằng remote thường. Điện thoại và tivi cần ở cùng mạng nhà; tivi có thể cắm LAN vào cùng router.
 2. Mở app → **Tìm tivi** → chọn đúng tivi → **Cho phép** trên màn hình tivi. Chỉ ghép đôi trên mạng tin cậy.
-3. Những lần sau mở app sẽ tự kết nối đến tivi đã lưu: **YouTube**, **Trang chủ**, điều hướng / **OK**, **Quay lại**, tăng/giảm âm lượng và tắt tiếng.
+3. Những lần sau mở app sẽ tự kết nối đến tivi đã lưu: **YouTube**, **Trang chủ**, **Tìm kiếm bằng giọng nói**, điều hướng / **OK**, **Quay lại**, tăng/giảm âm lượng và tắt tiếng.
 
 Cài đặt nằm trong nút bánh răng, không chiếm màn hình điều khiển. Mỗi điện thoại cần thiết lập riêng.
 
@@ -66,7 +72,7 @@ Nút YouTube chỉ mở ứng dụng trên tivi, không loại bỏ quảng cáo
 
 ## Giao diện
 
-Header gồm tiêu đề, chấm kết nối, **Nguồn** và bánh răng. Bên dưới là hai nút nổi bật **YouTube** và **Trang chủ**, cụm bốn hướng + **OK**, nút **Quay lại**, **Giảm tiếng / Tăng tiếng**, **Tắt tiếng / Bật lại tiếng**. Chữ tiếng Việt, vùng bấm lớn. Màn hình nhỏ hoặc cỡ chữ lớn có thể cuộn để không mất nút. Thông báo lỗi vẫn có thể xuất hiện khi thao tác thất bại; trạng thái kết nối thường ngày chỉ là chấm nhỏ.
+Header gồm tiêu đề, chấm kết nối, **Nguồn** và bánh răng. Bên dưới là **YouTube**, **Trang chủ**, nút **Tìm kiếm** có mic, cụm bốn hướng + **OK**, nút **Quay lại**, **Giảm tiếng / Tăng tiếng**, **Tắt tiếng / Bật lại tiếng**. Chữ tiếng Việt, vùng bấm lớn. Màn hình nhỏ hoặc cỡ chữ lớn có thể cuộn để không mất nút. Thông báo lỗi vẫn có thể xuất hiện khi thao tác thất bại; trạng thái kết nối thường ngày chỉ là chấm nhỏ.
 
 ## GitHub Actions
 
@@ -83,7 +89,7 @@ Không đưa file JKS, mật khẩu hoặc thông tin ghép đôi tivi vào repo
 ## Phạm vi kỹ thuật 0.2.0
 
 - Android 8.0 trở lên (minSdk 26), compile/target SDK 35.
-- Kotlin + Jetpack Compose, OkHttp WebSocket, coroutines. Không SDK quảng cáo, analytics, camera, micro, danh bạ hoặc định vị.
+- Kotlin + Jetpack Compose, OkHttp WebSocket, coroutines. Không SDK quảng cáo, analytics, camera, danh bạ hoặc định vị. Tìm kiếm giọng nói dùng hoạt động nhận dạng có sẵn của Android và app không xin quyền RECORD_AUDIO trực tiếp.
 - Tìm tivi bằng SSDP; ghi nhớ UUID và tìm lại IP khi UUID còn được công bố.
 - Kết nối lại khi app ở phía trước; không có dịch vụ chạy nền.
 - Khóa ghép đôi, dấu vân tay chứng chỉ và MAC tivi được mã hóa bằng Android Keystore, lưu trong thư mục không sao lưu. Đọc được cấu hình cũ không có MAC.
