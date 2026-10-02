@@ -60,7 +60,7 @@ object Protocol {
         request(id, "pairing/setPin", JSONObject().put("pin", pin))
     fun normalizePin(raw: String): String? {
         val pin = raw.trim()
-        return pin.takeIf { it.length in 4..12 && it.all { ch -> ch.isDigit() } }
+        return pin.takeIf { it.length in 4..12 && it.all { ch -> ch in '0'..'9' } }
     }
     fun button(key: String): String {
         require(key in setOf("UP", "DOWN", "LEFT", "RIGHT", "ENTER", "HOME", "BACK", "MUTE"))

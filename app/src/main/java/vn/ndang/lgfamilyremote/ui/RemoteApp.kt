@@ -107,7 +107,7 @@ fun RemoteApp(vm: RemoteViewModel) {
     }
     if (state.connection == ConnectionState.PAIRING && state.pairing == PairingKind.PIN) {
         PinPairingDialog(state = state, pin = pin,
-            onPinChange = { pin = it.filter(Char::isDigit).take(12) },
+            onPinChange = { pin = it.filter { ch -> ch in '0'..'9' }.take(12) },
             submit = { vm.submitPin(pin) }, cancel = vm::cancelPairing)
     }
     if (powerMenu && state.tv != null) PowerDialog(state,
@@ -133,7 +133,7 @@ private fun PinPairingDialog(state: RemoteState, pin: String, onPinChange: (Stri
                              submit: () -> Unit, cancel: () -> Unit) {
     AlertDialog(
         onDismissRequest = {},
-        icon = { Icon(Icons.Default.Pin, null, tint = MaterialTheme.colorScheme.primary) },
+        icon = { Icon(Icons.Default.Dialpad, null, tint = MaterialTheme.colorScheme.primary) },
         title = { Text("Nhập mã trên tivi") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
