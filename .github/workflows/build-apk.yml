@@ -68,7 +68,7 @@ jobs:
           (cd out/preview && sha256sum *.apk > SHA256SUMS.txt)
           if [ -f app/build/outputs/apk/release/app-release.apk ]; then
             mkdir -p out/release
-            cp app/build/outputs/apk/release/app-release.apk out/release/lg-family-remote-v0.1.0.apk
+            cp app/build/outputs/apk/release/app-release.apk out/release/lg-family-remote-v0.1.1.apk
             (cd out/release && sha256sum *.apk > SHA256SUMS.txt)
           fi
       - name: Upload preview APK
@@ -96,23 +96,28 @@ jobs:
           set -euo pipefail
           TAG="preview-${GITHUB_RUN_NUMBER}"
           DIR=out/preview
-          TITLE="Điều khiển TV 0.1.0 · bản thử #${GITHUB_RUN_NUMBER}"
+          TITLE="Điều khiển TV 0.1.1 · bản thử #${GITHUB_RUN_NUMBER}"
           if [ "$SIGNED" = true ]; then
             TAG="family-${GITHUB_RUN_NUMBER}"
             DIR=out/release
-            TITLE="Điều khiển TV 0.1.0 · bản ký riêng #${GITHUB_RUN_NUMBER}"
+            TITLE="Điều khiển TV 0.1.1 · bản ký riêng #${GITHUB_RUN_NUMBER}"
           fi
           {
-            echo '# Điều khiển TV'
+            echo '# Điều khiển TV 0.1.1'
             echo
-            echo 'Tải APK bên dưới, cài trên điện thoại Android 8 trở lên.'
-            echo 'Cùng mạng nhà → chọn tivi LG webOS → chọn Cho phép trên tivi.'
+            echo 'Thêm nút Nguồn trên header: hỏi xác nhận trước khi tắt TV.'
+            echo 'Trạng thái kết nối chỉ còn một chấm trên header; chi tiết nằm trong Cài đặt.'
+            echo 'Xanh = đã kết nối, vàng = đang kết nối, xám = chưa kết nối.'
+            echo 'Chạm chấm hoặc bánh răng để mở Cài đặt. Header cố định khi cuộn.'
+            echo '**Nút Nguồn hiện chỉ tắt TV. Bật lại bằng remote thường; chưa có Wake-on-LAN.**'
             echo
-            echo '**Chưa xác nhận tương thích trên tivi vật lý của gia đình.**'
+            echo 'Android 8 trở lên. Điện thoại và tivi cần dùng cùng mạng nhà.'
+            echo 'Bản trước được người dùng xác nhận hoạt động. Chức năng nguồn mới chưa được kiểm thử trên TV vật lý.'
             if [ "$SIGNED" != true ]; then
-              echo 'Bản thử dùng khóa debug tạm; lần build khác có thể cần gỡ bản cũ và ghép đôi lại.'
+              echo 'Bản thử dùng khóa debug tạm. Nếu Android báo xung đột chữ ký, cần gỡ bản thử cũ rồi cài và ghép đôi lại.'
               echo 'Bản dùng lâu dài cần ANDROID_SIGNING_BUNDLE. Xem docs/SIGNING.md.'
             fi
+            echo 'Nếu tivi từ chối quyền nguồn, mở Cài đặt → Nhập IP / tùy chọn → Ghép đôi lại với tivi.'
             echo
             echo "Commit: ${GITHUB_SHA}"
             echo "Build: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"

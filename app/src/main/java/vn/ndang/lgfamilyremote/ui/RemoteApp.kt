@@ -10,7 +10,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.VolumeDown
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -20,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -41,9 +46,9 @@ fun RemoteApp(vm: RemoteViewModel) {
         Box(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.TopCenter) {
             if (!state.loaded) {
                 CircularProgressIndicator(Modifier.padding(48.dp))
-            } else Column(Modifier.widthIn(max = 460.dp).fillMaxWidth()
-                .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            } else Column(Modifier.widthIn(max = 460.dp).fillMaxWidth().fillMaxHeight()
+                .padding(horizontal = 20.dp, vertical = 12.dp)) {
+                // Header remains visible while the controls scroll on small screens or with larger fonts.
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     if (settings && state.tv != null) {
                         IconButton(onClick = { settings = false }) {
@@ -51,39 +56,87 @@ fun RemoteApp(vm: RemoteViewModel) {
                         }
                     }
                     Column(Modifier.weight(1f)) {
-                        Text(if (settings) "Thiết lập tivi" else "Điều khiển TV", fontSize = 25.sp, fontWeight = FontWeight.Bold)
-                        Text(state.tv?.name ?: "Dành cho cả nhà", style = MaterialTheme.typography.bodyMedium,
+                        Text(if (settings) "Thiết lập tivi" else "Điều khiển TV",
+                            fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        if (settings) Text(state.tv?.name ?: "Dành cho cả nhà",
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    if (!settings && state.tv != null) IconButton(onClick = { settings = true }) {
-                        Icon(Icons.Default.Settings, "Cài đặt kết nối tivi")
+                    if (!settings && state.tv != null) {
+                        ConnectionDot(state) { settings = true }
+                        FilledTonalButton(onClick = { confirm = "power" },
+                            enabled = state.connection == ConnectionState.CONNECTED && !state.busy,
+                            modifier = Modifier.width(62.dp).heightIn(min = 62.dp),
+                            shape = RoundedCornerShape(18.dp), contentPadding = PaddingValues(6.dp),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = Color(0xFFFCE8E6), contentColor = Color(0xFFB3261E))) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.PowerSettingsNew, null, Modifier.size(27.dp))
+                                Text("Nguồn", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                        IconButton(onClick = { settings = true }) {
+                            Icon(Icons.Default.Settings, "Cài đặt kết nối tivi")
+                        }
                     }
                 }
-                if (state.error != null) ErrorCard(state.error!!, vm::clearError)
-                if (settings || state.tv == null) {
-                    SetupPanel(state, vm, { confirm = "repair" }, { confirm = "forget" })
-                } else {
-                    ConnectionCard(state, vm::retry, { settings = true }, vm::cancelPairing)
-                    RemotePanel(state, vm::youtube, vm::key, vm::volume, vm::mute)
-                    Text("Không quảng cáo · Chỉ dùng mạng nhà", Modifier.fillMaxWidth().padding(top = 4.dp),
-                        textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Spacer(Modifier.height(2.dp))
+                    if (state.error != null) ErrorCard(state.error!!, vm::clearError)
+                    if (settings || state.tv == null) {
+                        SetupPanel(state, vm, { confirm = "repair" }, { confirm = "forget" })
+                    } else {
+                        // No connection card, status text or TV-name subtitle on the everyday remote.
+                        RemotePanel(state, vm::youtube, vm::key, vm::volume, vm::mute)
+                        Text("Không quảng cáo · Chỉ dùng mạng nhà", Modifier.fillMaxWidth().padding(top = 4.dp),
+                            textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Spacer(Modifier.height(8.dp))
                 }
-                Spacer(Modifier.height(8.dp))
             }
         }
     }
     if (confirm.isNotEmpty()) AlertDialog(
         onDismissRequest = { confirm = "" },
-        title = { Text(if (confirm == "forget") "Quên tivi này?" else "Ghép đôi lại với tivi?") },
-        text = { Text(if (confirm == "forget") "Lần sau cần thiết lập kết nối lại trên điện thoại này."
-            else "Chỉ tiếp tục khi bạn đang dùng mạng nhà và đã kiểm tra đúng tivi. App sẽ ghi nhận lại chứng chỉ và yêu cầu Cho phép trên tivi.") },
+        title = { Text(when (confirm) {
+            "power" -> "Tắt tivi?"
+            "forget" -> "Quên tivi này?"
+            else -> "Ghép đôi lại với tivi?"
+        }) },
+        text = { Text(when (confirm) {
+            "power" -> "Bạn muốn tắt tivi bây giờ? Bản này bật lại tivi bằng remote thường."
+            "forget" -> "Lần sau cần thiết lập kết nối lại trên điện thoại này."
+            else -> "Chỉ tiếp tục khi bạn đang dùng mạng nhà và đã kiểm tra đúng tivi. App sẽ ghi nhận lại chứng chỉ và yêu cầu Cho phép trên tivi."
+        }) },
         confirmButton = { TextButton(onClick = {
-            if (confirm == "forget") vm.forget() else vm.repair()
+            when (confirm) {
+                "power" -> vm.powerOff()
+                "forget" -> vm.forget()
+                else -> vm.repair()
+            }
             confirm = ""
-        }) { Text("Tiếp tục") } },
+        }, enabled = confirm != "power" || (state.connection == ConnectionState.CONNECTED && !state.busy)) {
+            Text(if (confirm == "power") "Tắt TV" else "Tiếp tục")
+        } },
         dismissButton = { TextButton(onClick = { confirm = "" }) { Text("Hủy") } }
     )
+}
+
+@Composable
+private fun ConnectionDot(state: RemoteState, openSettings: () -> Unit) {
+    val color = when (state.connection) {
+        ConnectionState.CONNECTED -> Color(0xFF257545)
+        ConnectionState.CONNECTING, ConnectionState.PAIRING -> Color(0xFFB7791F)
+        else -> Color(0xFF7B8491)
+    }
+    // The only visible connection indicator is a small dot. Its touch target and TalkBack label remain accessible.
+    IconButton(onClick = openSettings, modifier = Modifier.size(48.dp).semantics {
+        contentDescription = "Kết nối tivi: ${state.status}. Mở cài đặt kết nối"
+    }) {
+        Box(Modifier.size(12.dp).background(color, CircleShape))
+    }
 }
 
 @Composable
@@ -132,12 +185,12 @@ private fun RemotePanel(state: RemoteState, youtube: () -> Unit, key: (String) -
             Direction(Icons.Default.KeyboardArrowUp, "Lên", enabled, Modifier.width(96.dp)) { key("UP") }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically) {
-                Direction(Icons.Default.KeyboardArrowLeft, "Trái", enabled, Modifier.weight(1f)) { key("LEFT") }
+                Direction(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Trái", enabled, Modifier.weight(1f)) { key("LEFT") }
                 Button(onClick = { key("ENTER") }, enabled = enabled,
                     modifier = Modifier.weight(1f).heightIn(min = 76.dp), shape = RoundedCornerShape(22.dp)) {
                     Text("OK", fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 }
-                Direction(Icons.Default.KeyboardArrowRight, "Phải", enabled, Modifier.weight(1f)) { key("RIGHT") }
+                Direction(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Phải", enabled, Modifier.weight(1f)) { key("RIGHT") }
             }
             Direction(Icons.Default.KeyboardArrowDown, "Xuống", enabled, Modifier.width(96.dp)) { key("DOWN") }
         }
@@ -153,7 +206,7 @@ private fun RemotePanel(state: RemoteState, youtube: () -> Unit, key: (String) -
     }
     OutlinedButton(onClick = mute, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
         shape = RoundedCornerShape(18.dp)) {
-        Icon(if (state.volume.muted == true) Icons.AutoMirrored.Filled.VolumeUp else Icons.Default.VolumeOff, null)
+        Icon(if (state.volume.muted == true) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff, null)
         Spacer(Modifier.width(10.dp))
         Text(if (state.volume.muted == true) "Bật lại tiếng" else "Tắt tiếng", fontSize = 19.sp)
         if (state.volume.level != null) Text("  ·  ${state.volume.level}", fontSize = 17.sp)
@@ -257,7 +310,7 @@ private fun SetupPanel(state: RemoteState, vm: RemoteViewModel, repair: () -> Un
                 Text("Quên tivi này", color = MaterialTheme.colorScheme.error)
             }
         }
-        Text("Phiên bản ${BuildConfig.VERSION_NAME}\nDành cho LG webOS. Chưa hỗ trợ bật tivi từ trạng thái tắt. Không phải app chính thức của LG hay YouTube.",
+        Text("Phiên bản ${BuildConfig.VERSION_NAME}\nDành cho LG webOS. Nút Nguồn tắt TV; bật lại bằng remote thường. Không phải app chính thức của LG hay YouTube.",
             style = MaterialTheme.typography.bodySmall)
     }
 }

@@ -22,6 +22,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     private var connectionJob: Job? = null
     private var scanJob: Job? = null
     private var commandJob: Job? = null
+    private var powerOffRequested = false
 
     init {
         viewModelScope.launch {
@@ -119,6 +120,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     }
     private fun connect(initial: TvConfig, allowPairing: Boolean) {
         stopConnection()
+        powerOffRequested = false
         val token = generation
         mutableState.update { it.copy(tv = initial, error = null, busy = false, volume = VolumeState()) }
         connectionJob = viewModelScope.launch {
@@ -161,9 +163,10 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                 catch (e: Exception) {
                     if (generation != token) break
                     val problem = e as? TvException
-                    retryable = !pairingAllowed && (problem == null || problem.kind == ErrorKind.NETWORK)
+                    retryable = !powerOffRequested && !pairingAllowed && (problem == null || problem.kind == ErrorKind.NETWORK)
                     mutableState.update { it.copy(connection = ConnectionState.OFFLINE, busy = false,
-                        status = problem?.message ?: "Chưa kết nối được tivi. Kiểm tra mạng nhà.") }
+                        status = if (powerOffRequested) "Tivi đã ngắt kết nối sau lệnh nguồn."
+                        else problem?.message ?: "Chưa kết nối được tivi. Kiểm tra mạng nhà.") }
                 } finally {
                     current.close()
                     if (session === current) session = null
@@ -194,6 +197,27 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     fun volume(up: Boolean) = command { it.changeVolume(up) }
     fun mute() = command { it.toggleMute() }
     fun youtube() = command { it.launchYouTube(state.value.tv?.youtubeId.orEmpty()) }
+
+    /** Called only after the user confirms Tắt TV. Never interpret this as a toggle or wake command. */
+    fun powerOff() = command { current ->
+        powerOffRequested = true
+        try {
+            val acknowledged = current.requestPowerOff()
+            // Pause reconnect attempts after an intentional shutdown. Retry or reopening the app resumes them.
+            connectionJob?.cancel()
+            current.close()
+            if (session === current) session = null
+            mutableState.update { it.copy(connection = ConnectionState.OFFLINE, busy = false,
+                status = if (acknowledged) "Tivi đã nhận yêu cầu tắt. Bật lại bằng remote thường."
+                else "Tivi đã ngắt kết nối; hãy kiểm tra màn hình để xác nhận đã tắt.") }
+        } catch (e: CancellationException) {
+            powerOffRequested = false
+            throw e
+        } catch (e: Exception) {
+            powerOffRequested = false
+            throw e
+        }
+    }
     override fun onCleared() {
         stopConnection()
         super.onCleared()

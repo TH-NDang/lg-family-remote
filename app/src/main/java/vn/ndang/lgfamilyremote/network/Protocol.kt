@@ -40,7 +40,7 @@ object LanRules {
 
 object Protocol {
     private val permissions = listOf("LAUNCH", "CONTROL_AUDIO", "CONTROL_INPUT_JOYSTICK",
-        "CONTROL_MOUSE_AND_KEYBOARD", "READ_INSTALLED_APPS", "READ_RUNNING_APPS", "READ_APP_STATUS")
+        "CONTROL_MOUSE_AND_KEYBOARD", "READ_INSTALLED_APPS", "READ_RUNNING_APPS", "READ_APP_STATUS", "CONTROL_POWER")
     fun register(tv: TvConfig): String {
         val manifest = JSONObject().put("manifestVersion", 1).put("appVersion", "1.0")
             .put("appId", "vn.ndang.lgfamilyremote")
