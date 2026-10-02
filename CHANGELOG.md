@@ -1,5 +1,15 @@
 # Thay đổi
 
+## 0.2.7 — 2026-10-02
+
+- Thêm nút **Tìm kiếm** với mic trên màn hình remote.
+- Gọi trình nhận dạng giọng nói Android với ngôn ngữ `vi-VN`, ưu tiên offline khi dịch vụ trên máy hỗ trợ.
+- Kết quả được gửi qua `com.webos.service.ime/insertText`, sau đó `sendEnterKey`.
+- Giữ tạm câu nói qua vòng onStop/onStart của trình nhận dạng và gửi sau khi TV kết nối lại.
+- Thêm quyền webOS `CONTROL_INPUT_TEXT`; không lưu bản ghi âm hay câu tìm kiếm vào cấu hình.
+- Thêm kiểm thử cho quyền text input và chuỗi lệnh insertText → Enter.
+
+
 ## 0.2.6 — 2026-10-02
 
 - Thêm launcher icon riêng dựa trên mẫu đã duyệt: nền gradient xanh–tím, remote màu tối, nút nguồn đỏ, D-pad/OK lớn.
