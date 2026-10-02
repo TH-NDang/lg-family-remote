@@ -10,6 +10,15 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.1.1
+
+- **Nguồn** nằm trên header: chạm → xác nhận **Tắt TV**. Chọn **Hủy** để không gửi lệnh. **Hiện chỉ tắt TV, chưa bật TV từ trạng thái chờ**; bật lại bằng remote thường.
+- Màn hình remote chỉ có **một chấm kết nối trên header**, không còn khung trạng thái hoặc tên tivi phía dưới: xanh khi đã kết nối, vàng khi đang kết nối/ghép đôi, xám khi chưa kết nối.
+- Chạm chấm hoặc bánh răng để xem chi tiết và thử kết nối lại. Header giữ nguyên ở trên khi cuộn các nút.
+- Các nút YouTube, Trang chủ, điều hướng, Quay lại và âm lượng giữ nguyên. Xem [CHANGELOG.md](CHANGELOG.md).
+
+Sau khi yêu cầu tắt TV, app dừng thử kết nối lại để tránh quét mạng không cần thiết. Khi đã bật TV bằng remote thường, mở lại app hoặc chọn **Thử lại** trong Cài đặt. Nếu TV từ chối quyền nguồn, mở **Cài đặt → Nhập IP / tùy chọn → Ghép đôi lại với tivi**, rồi xác nhận trên TV.
+
 ## Thiết lập lần đầu
 
 1. Bật tivi bằng remote thường. Điện thoại và tivi cần ở cùng mạng nhà; tivi có thể cắm LAN vào cùng router.
@@ -20,11 +29,11 @@ Cài đặt nằm trong nút bánh răng, không chiếm màn hình điều khi�
 
 Không tìm được tivi? Mở **Nhập IP / tùy chọn** và nhập IP nội bộ của tivi. Mặc định dùng WSS cổng 3001. Chỉ bật **TV cũ: WS cổng 3000** khi cần; chế độ này không mã hóa và app không tự chuyển sang nó. Mạng khách có tính năng cách ly thiết bị có thể chặn kết nối.
 
-Chưa có chức năng bật tivi từ trạng thái tắt. Nút YouTube chỉ mở ứng dụng trên tivi, không loại bỏ quảng cáo bên trong YouTube.
+Nút YouTube chỉ mở ứng dụng trên tivi, không loại bỏ quảng cáo bên trong YouTube.
 
 ## Giao diện
 
-Hai nút nổi bật **YouTube** và **Trang chủ**, cụm bốn hướng + **OK**, nút **Quay lại**, **Giảm tiếng / Tăng tiếng**, **Tắt tiếng / Bật lại tiếng**. Chữ tiếng Việt, vùng bấm lớn. Màn hình nhỏ hoặc cỡ chữ lớn có thể cuộn để không mất nút.
+Header gồm tiêu đề, chấm kết nối, **Nguồn** và bánh răng. Bên dưới là hai nút nổi bật **YouTube** và **Trang chủ**, cụm bốn hướng + **OK**, nút **Quay lại**, **Giảm tiếng / Tăng tiếng**, **Tắt tiếng / Bật lại tiếng**. Chữ tiếng Việt, vùng bấm lớn. Màn hình nhỏ hoặc cỡ chữ lớn có thể cuộn để không mất nút. Thông báo lỗi vẫn có thể xuất hiện khi thao tác thất bại; trạng thái kết nối thường ngày chỉ là chấm nhỏ.
 
 ## GitHub Actions
 
@@ -38,18 +47,19 @@ Workflow `.github/workflows/build-apk.yml` dùng **GitHub-hosted Ubuntu**, khôn
 
 Không đưa file JKS, mật khẩu hoặc thông tin ghép đôi tivi vào repo công khai. Xem [SECURITY.md](SECURITY.md).
 
-## Phạm vi kỹ thuật 0.1.0
+## Phạm vi kỹ thuật 0.1.1
 
 - Android 8.0 trở lên (minSdk 26), compile/target SDK 35.
 - Kotlin + Jetpack Compose, OkHttp WebSocket, coroutines. Không SDK quảng cáo, analytics, camera, micro, danh bạ hoặc định vị.
 - Tìm tivi bằng SSDP; ghi nhớ UUID và tìm lại IP khi UUID còn được công bố.
 - Kết nối lại khi app ở phía trước; không có dịch vụ chạy nền.
 - Khóa ghép đôi và dấu vân tay chứng chỉ được mã hóa bằng Android Keystore, lưu trong thư mục không sao lưu.
-- Không tự phát lại lệnh khi nối lại. Lệnh đã tới tivi trước khi mất mạng không thể thu hồi.
+- Không tự phát lại lệnh khi nối lại, kể cả lệnh nguồn. Lệnh đã tới tivi trước khi mất mạng không thể thu hồi.
+- Xin quyền CONTROL_POWER để gửi lệnh tắt. Nếu TV đóng kết nối trước khi trả lời, app không coi đó là bằng chứng chắc chắn TV đã tắt.
 - Tắt tiếng dựa trên trạng thái trả về từ tivi, không tự đoán khi tivi không cung cấp.
 - Không hỗ trợ LG NetCast, TV không thông minh hoặc điều khiển qua Internet.
 
-**Build / unit test thành công không chứng minh tương thích với mọi TV. Chưa kiểm thử trên tivi vật lý của gia đình.** Xem [bảng kiểm thử thực tế](docs/TESTING.md). SSAP / pointer input tùy thuộc firmware.
+**Người dùng đã xác nhận bản 0.1.0 hoạt động trên tivi nhà mình. Chức năng nguồn mới của 0.1.1 chưa được xác nhận trên tivi vật lý. Build / unit test thành công không chứng minh tương thích với mọi TV.** Xem [bảng kiểm thử thực tế](docs/TESTING.md) và [kiểm tra bản 0.1.1](CHANGELOG.md). SSAP / pointer input tùy thuộc firmware.
 
 ## Phát triển
 
