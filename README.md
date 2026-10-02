@@ -10,6 +10,12 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.3.0
+
+- **Tìm YouTube bằng giọng nói**: bấm mic, nói nội dung; app mở thẳng trang kết quả YouTube cho câu nói đó.
+- Không cần mở sẵn ô tìm kiếm trên TV và không phụ thuộc webOS IME/text focus.
+- Không cần quyền `CONTROL_INPUT_TEXT`; dùng quyền mở ứng dụng YouTube đã có.
+
 ## Mới trong 0.2.9
 
 - Nút nguồn trên header lớn hơn: vùng bấm 64dp, icon 36dp và nền đỏ nhạt để bố mẹ dễ nhìn và dễ chạm.
@@ -21,9 +27,7 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 ## Mới trong 0.2.7
 
-- Thêm nút **Tìm kiếm** với biểu tượng mic. Mở ô tìm kiếm trên TV/YouTube, bấm mic trên điện thoại, nói tiếng Việt và app gửi chữ + Enter sang TV.
-- Dùng trình nhận dạng giọng nói hệ thống của Android; app không tự ghi âm nền và không lưu bản ghi âm.
-- Nếu TV đã ghép từ bản cũ nhưng từ chối nhập chữ, vào Cài đặt → Ghép đôi lại một lần để cấp `CONTROL_INPUT_TEXT`.
+- Phiên bản cũ dùng webOS IME nên phụ thuộc ô nhập đang focus; cơ chế này đã được thay bằng YouTube deep-link ở 0.3.0.
 
 ## Mới trong 0.2.6
 
@@ -81,7 +85,7 @@ Nút YouTube chỉ mở ứng dụng trên tivi, không loại bỏ quảng cáo
 
 ## Giao diện
 
-Header gồm tiêu đề, chấm kết nối, **Nguồn** và bánh răng. Bên dưới là **YouTube**, **Trang chủ**, nút **Tìm kiếm** có mic, cụm bốn hướng + **OK**, nút **Quay lại**, **Giảm tiếng / Tăng tiếng**, **Tắt tiếng / Bật lại tiếng**. Chữ tiếng Việt, vùng bấm lớn. Màn hình nhỏ hoặc cỡ chữ lớn có thể cuộn để không mất nút. Thông báo lỗi vẫn có thể xuất hiện khi thao tác thất bại; trạng thái kết nối thường ngày chỉ là chấm nhỏ.
+Header gồm tiêu đề, chấm kết nối, **Nguồn** và bánh răng. Bên dưới là **YouTube**, **Trang chủ**, nút **Tìm YouTube** có mic, cụm bốn hướng + **OK**, nút **Quay lại**, **Giảm tiếng / Tăng tiếng**, **Tắt tiếng / Bật lại tiếng**. Chữ tiếng Việt, vùng bấm lớn. Màn hình nhỏ hoặc cỡ chữ lớn có thể cuộn để không mất nút. Thông báo lỗi vẫn có thể xuất hiện khi thao tác thất bại; trạng thái kết nối thường ngày chỉ là chấm nhỏ.
 
 ## GitHub Actions
 

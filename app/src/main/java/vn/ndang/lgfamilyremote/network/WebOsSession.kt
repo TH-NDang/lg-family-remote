@@ -215,23 +215,29 @@ class WebOsSession internal constructor(
         if (!isOpen || !ws.send(message)) throw TvException(ErrorKind.NETWORK, "Đã mất kết nối với tivi.")
     }
 
-    suspend fun voiceSearch(raw: String) {
-        val text = raw.trim().replace(Regex("\\s+"), " ").take(200)
-        if (text.isBlank()) return
-        request(
-            "com.webos.service.ime/insertText",
-            JSONObject().put("text", text).put("replace", 0)
-        )
-        request("com.webos.service.ime/sendEnterKey")
-    }
-
-    suspend fun launchYouTube(overrideId: String): String {
+    private suspend fun resolveYouTubeId(overrideId: String): String {
         val discovered = if (overrideId.isBlank()) {
             try { Protocol.youtubeApp(request("com.webos.applicationManager/listApps")) }
             catch (e: CancellationException) { throw e }
             catch (_: TvException) { null }
         } else overrideId
-        val id = discovered ?: "youtube.leanback.v4"
+        return discovered ?: "youtube.leanback.v4"
+    }
+
+    suspend fun launchYouTubeSearch(raw: String, overrideId: String): String {
+        val target = Protocol.youtubeSearchUrl(raw)
+            ?: throw TvException(ErrorKind.COMMAND, "Chưa nhận được nội dung cần tìm.")
+        val id = resolveYouTubeId(overrideId)
+        val payload = JSONObject()
+            .put("id", id)
+            .put("contentId", target)
+            .put("params", JSONObject().put("contentTarget", target))
+        request("system.launcher/launch", payload)
+        return id
+    }
+
+    suspend fun launchYouTube(overrideId: String): String {
+        val id = resolveYouTubeId(overrideId)
         request("system.launcher/launch", JSONObject().put("id", id))
         return id
     }

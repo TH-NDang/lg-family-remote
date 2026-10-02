@@ -1,5 +1,17 @@
 # Thay đổi
 
+## 0.3.0 — 2026-10-02
+
+- Làm lại tìm kiếm bằng giọng nói theo hướng **YouTube-first**.
+- Sau khi Android nhận câu nói, app mở thẳng YouTube với deep-link `https://www.youtube.com/tv?q=...` qua `system.launcher/launch`.
+- Payload gửi đồng thời `contentId` và `params.contentTarget` để tương thích nhiều thế hệ firmware/webOS YouTube.
+- Không còn phụ thuộc TV đang focus đúng ô nhập, nên có thể tìm từ màn hình Home hoặc khi YouTube chưa mở.
+- Bỏ `CONTROL_INPUT_TEXT` khỏi manifest ghép đôi cho chức năng này; chỉ dùng quyền `LAUNCH` đã có từ đầu.
+- Bỏ yêu cầu ưu tiên nhận dạng offline để tránh trường hợp máy không có gói tiếng Việt offline và trả về không có kết quả.
+- Đổi nhãn nút thành **Tìm YouTube**.
+- Thêm kiểm thử mã hóa tiếng Việt và payload deep-link YouTube.
+
+
 ## 0.2.9 — 2026-10-02
 
 - Tăng nút nguồn trên header từ 48dp lên **64dp** để dễ bấm hơn cho người lớn tuổi.

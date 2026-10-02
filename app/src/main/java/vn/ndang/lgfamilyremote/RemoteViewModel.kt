@@ -198,7 +198,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         pendingVoiceQuery = query
         if (state.value.connection == ConnectionState.CONNECTED && session?.isOpen == true && !state.value.busy) {
             pendingVoiceQuery = null
-            remoteCommand { it.voiceSearch(query) }
+            remoteCommand { it.launchYouTubeSearch(query, state.value.tv?.youtubeId.orEmpty()) }
         } else if (foreground && state.value.tv != null &&
             state.value.connection in listOf(ConnectionState.IDLE, ConnectionState.OFFLINE)) {
             retry()
@@ -290,7 +290,9 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                     infoJob = launch { learnWakeAddresses(current, token, true) }
                     pendingVoiceQuery?.let { query ->
                         pendingVoiceQuery = null
-                        remoteQueue.trySend(RemoteTask(token) { it.voiceSearch(query) })
+                        remoteQueue.trySend(RemoteTask(token) {
+                            it.launchYouTubeSearch(query, state.value.tv?.youtubeId.orEmpty())
+                        })
                     }
                     throw current.awaitClosed()
                 } catch (e: CancellationException) { throw e }

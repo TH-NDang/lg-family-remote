@@ -8,6 +8,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import vn.ndang.lgfamilyremote.network.Protocol
@@ -16,16 +17,26 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 class VoiceSearchTest {
     @Test
-    fun manifestRequestsTextInputPermission() {
+    fun youtubeSearchUrlEncodesVietnameseQuery() {
+        assertEquals(
+            "https://www.youtube.com/tv?q=nh%E1%BA%A1c%20thi%E1%BA%BFu%20nhi",
+            Protocol.youtubeSearchUrl("  nhạc   thiếu nhi  ")
+        )
+        assertEquals(null, Protocol.youtubeSearchUrl("   "))
+    }
+
+    @Test
+    fun searchNeedsLaunchPermissionButNotTextInputPermission() {
         val manifest = JSONObject(Protocol.register(TvConfig("192.168.1.20")))
             .getJSONObject("payload").getJSONObject("manifest")
         val permissions = manifest.getJSONArray("permissions")
         val names = (0 until permissions.length()).map { permissions.getString(it) }
-        assertTrue(names.contains("CONTROL_INPUT_TEXT"))
+        assertTrue(names.contains("LAUNCH"))
+        assertFalse(names.contains("CONTROL_INPUT_TEXT"))
     }
 
     @Test
-    fun voiceSearchInsertsTextThenPressesEnter() = runBlocking {
+    fun voiceSearchLaunchesYoutubeSearchDeepLink() = runBlocking {
         val server = MockWebServer()
         val seen = ConcurrentLinkedQueue<JSONObject>()
         server.enqueue(MockResponse().withWebSocketUpgrade(object : WebSocketListener() {
@@ -35,11 +46,20 @@ class VoiceSearchTest {
                     webSocket.send("""{"id":"register","type":"registered","payload":{"client-key":"key"}}""")
                 } else {
                     seen.add(json)
+                    val payload = if (json.optString("uri").endsWith("listApps")) {
+                        JSONObject()
+                            .put("returnValue", true)
+                            .put("apps", org.json.JSONArray().put(
+                                JSONObject().put("id", "youtube.leanback.v4").put("title", "YouTube")
+                            ))
+                    } else {
+                        JSONObject().put("returnValue", true).put("sessionId", "yt")
+                    }
                     webSocket.send(
                         JSONObject()
                             .put("id", json.getString("id"))
                             .put("type", "response")
-                            .put("payload", JSONObject().put("returnValue", true))
+                            .put("payload", payload)
                             .toString()
                     )
                 }
@@ -56,17 +76,18 @@ class VoiceSearchTest {
         try {
             withTimeout(4000) {
                 client.connect()
-                client.voiceSearch("  nhạc   thiếu nhi  ")
+                client.launchYouTubeSearch("nhạc thiếu nhi", "")
             }
 
             assertEquals(2, seen.size)
-            val first = seen.elementAt(0)
-            val second = seen.elementAt(1)
+            val launch = seen.elementAt(1)
+            assertEquals("ssap://system.launcher/launch", launch.getString("uri"))
 
-            assertEquals("ssap://com.webos.service.ime/insertText", first.getString("uri"))
-            assertEquals("nhạc thiếu nhi", first.getJSONObject("payload").getString("text"))
-            assertEquals(0, first.getJSONObject("payload").getInt("replace"))
-            assertEquals("ssap://com.webos.service.ime/sendEnterKey", second.getString("uri"))
+            val payload = launch.getJSONObject("payload")
+            val target = "https://www.youtube.com/tv?q=nh%E1%BA%A1c%20thi%E1%BA%BFu%20nhi"
+            assertEquals("youtube.leanback.v4", payload.getString("id"))
+            assertEquals(target, payload.getString("contentId"))
+            assertEquals(target, payload.getJSONObject("params").getString("contentTarget"))
         } finally {
             client.close()
             server.shutdown()

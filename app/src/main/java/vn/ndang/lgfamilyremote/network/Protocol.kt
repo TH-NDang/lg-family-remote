@@ -4,6 +4,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import vn.ndang.lgfamilyremote.*
 import java.net.URI
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 object LanRules {
     fun isPrivateIpv4(host: String): Boolean {
@@ -40,7 +42,7 @@ object LanRules {
 
 object Protocol {
     private val permissions = listOf("LAUNCH", "CONTROL_AUDIO", "CONTROL_INPUT_JOYSTICK",
-        "CONTROL_MOUSE_AND_KEYBOARD", "CONTROL_INPUT_TEXT", "READ_INSTALLED_APPS", "READ_RUNNING_APPS", "READ_APP_STATUS",
+        "CONTROL_MOUSE_AND_KEYBOARD", "READ_INSTALLED_APPS", "READ_RUNNING_APPS", "READ_APP_STATUS",
         "CONTROL_POWER", "READ_NETWORK_STATE")
     fun register(tv: TvConfig, pairing: PairingKind = PairingKind.PROMPT): String {
         val manifest = JSONObject().put("manifestVersion", 1).put("appVersion", "1.0")
@@ -76,6 +78,14 @@ object Protocol {
             if (p.has(muteKey) && !p.isNull(muteKey)) p.optBoolean(muteKey) else null
         )
     }
+    fun youtubeSearchUrl(raw: String): String? {
+        val text = raw.trim().replace(Regex("\\s+"), " ").take(200)
+        if (text.isBlank()) return null
+        val encoded = URLEncoder.encode(text, StandardCharsets.UTF_8.toString())
+            .replace("+", "%20")
+        return "https://www.youtube.com/tv?q=$encoded"
+    }
+
     fun youtubeApp(payload: JSONObject): String? {
         val apps = payload.optJSONArray("apps") ?: return null
         val candidates = (0 until apps.length()).mapNotNull { apps.optJSONObject(it) }

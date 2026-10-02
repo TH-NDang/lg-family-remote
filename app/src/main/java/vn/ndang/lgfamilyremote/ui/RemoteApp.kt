@@ -53,8 +53,7 @@ fun RemoteApp(vm: RemoteViewModel) {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "vi-VN")
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "vi-VN")
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Nói nội dung cần tìm")
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Nói nội dung cần tìm trên YouTube")
         }
     }
     val voiceAvailable = remember(context) {
@@ -269,7 +268,7 @@ private fun RemotePanel(
     ) {
         Icon(Icons.Default.Mic, null, Modifier.size(28.dp))
         Spacer(Modifier.width(10.dp))
-        Text("Tìm kiếm", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+        Text("Tìm YouTube", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
     }
     Surface(shape = RoundedCornerShape(28.dp), color = Color.White) {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
