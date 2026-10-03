@@ -10,6 +10,10 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.3.1
+
+- Hai nút âm lượng hiển thị icon loa lớn kèm dấu **− / +** để nhìn nhanh là biết giảm hay tăng.
+
 ## Mới trong 0.3.0
 
 - **Tìm YouTube bằng giọng nói**: bấm mic, nói nội dung; app mở thẳng trang kết quả YouTube cho câu nói đó.
