@@ -292,8 +292,8 @@ private fun RemotePanel(
         Spacer(Modifier.width(10.dp)); Text("Quay lại", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
     }
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        SoundButton("Giảm tiếng", Icons.AutoMirrored.Filled.VolumeDown, enabled, Modifier.weight(1f)) { volume(false) }
-        SoundButton("Tăng tiếng", Icons.AutoMirrored.Filled.VolumeUp, enabled, Modifier.weight(1f)) { volume(true) }
+        SoundButton("Giảm tiếng", Icons.AutoMirrored.Filled.VolumeDown, "−", enabled, Modifier.weight(1f)) { volume(false) }
+        SoundButton("Tăng tiếng", Icons.AutoMirrored.Filled.VolumeUp, "+", enabled, Modifier.weight(1f)) { volume(true) }
     }
     OutlinedButton(onClick = mute, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
         shape = RoundedCornerShape(18.dp)) {
@@ -326,12 +326,56 @@ private fun Direction(icon: ImageVector, label: String, enabled: Boolean, modifi
 }
 
 @Composable
-private fun SoundButton(label: String, icon: ImageVector, enabled: Boolean, modifier: Modifier, click: () -> Unit) {
-    FilledTonalButton(onClick = click, enabled = enabled, modifier = modifier.heightIn(min = 80.dp),
-        shape = RoundedCornerShape(20.dp), contentPadding = PaddingValues(8.dp)) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Icon(icon, null, Modifier.size(29.dp))
-            Text(label, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+private fun SoundButton(
+    label: String,
+    icon: ImageVector,
+    symbol: String,
+    enabled: Boolean,
+    modifier: Modifier,
+    click: () -> Unit
+) {
+    FilledTonalButton(
+        onClick = click,
+        enabled = enabled,
+        modifier = modifier.heightIn(min = 84.dp),
+        shape = RoundedCornerShape(20.dp),
+        contentPadding = PaddingValues(8.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    icon,
+                    contentDescription = label,
+                    modifier = Modifier.size(34.dp)
+                )
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 10.dp, y = (-7).dp)
+                        .size(22.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            symbol,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+            }
+            Text(
+                label,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
