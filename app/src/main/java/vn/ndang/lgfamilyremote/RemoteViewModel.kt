@@ -38,6 +38,17 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         capacity = 12,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
+
+    private sealed interface PointerTask {
+        val generation: Int
+        data class Move(override val generation: Int, val dx: Float, val dy: Float) : PointerTask
+        data class Click(override val generation: Int) : PointerTask
+    }
+
+    private val pointerQueue = Channel<PointerTask>(
+        capacity = 16,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
     private var powerOffRequested = false
     private var pendingVoiceQuery: String? = null
 
@@ -55,6 +66,26 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                     if (task.generation == generation) {
                         mutableState.update { it.copy(error =
                             (e as? TvException)?.message ?: "Chưa gửi được lệnh. Hãy kiểm tra kết nối tivi.") }
+                    }
+                }
+            }
+        }
+        viewModelScope.launch {
+            for (task in pointerQueue) {
+                if (task.generation != generation || state.value.busy) continue
+                val current = session
+                if (current == null || !current.isOpen) continue
+                try {
+                    when (task) {
+                        is PointerTask.Move -> current.pointerMove(task.dx, task.dy)
+                        is PointerTask.Click -> current.pointerClick()
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    if (task.generation == generation) {
+                        mutableState.update { it.copy(error =
+                            (e as? TvException)?.message ?: "Chưa điều khiển được con trỏ.") }
                     }
                 }
             }
@@ -82,13 +113,14 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         stopConnection()
         scanJob?.cancel()
         mutableState.update { it.copy(connection = ConnectionState.OFFLINE, busy = false, notice = null,
-            pairing = null, pinSubmitting = false, pinError = null,
+            pairing = null, pinSubmitting = false, pinError = null, textInputFocused = false,
             status = if (it.tv == null) "Chưa kết nối tivi" else "Sẽ tự kết nối khi mở app") }
     }
     private fun stopConnection() {
         generation++
         commandJob?.cancel()
         drainRemoteQueue()
+        drainPointerQueue()
         infoJob?.cancel()
         connectionJob?.cancel()
         session?.close()
@@ -97,6 +129,12 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     private fun drainRemoteQueue() {
         while (remoteQueue.tryReceive().isSuccess) {
             // Discard stale taps from the previous connection/session.
+        }
+    }
+
+    private fun drainPointerQueue() {
+        while (pointerQueue.tryReceive().isSuccess) {
+            // Discard stale pointer motion from the previous connection/session.
         }
     }
 
@@ -205,6 +243,25 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun replaceTextInput(text: String) {
+        val value = text.take(500)
+        remoteCommand { it.replaceText(value) }
+    }
+
+    fun textInputEnter() = remoteCommand { it.sendTextEnter() }
+
+    fun pointerMove(dx: Float, dy: Float) {
+        if (state.value.connection != ConnectionState.CONNECTED || state.value.busy) return
+        val x = dx.coerceIn(-120f, 120f)
+        val y = dy.coerceIn(-120f, 120f)
+        pointerQueue.trySend(PointerTask.Move(generation, x, y))
+    }
+
+    fun pointerClick() {
+        if (state.value.connection != ConnectionState.CONNECTED || state.value.busy) return
+        pointerQueue.trySend(PointerTask.Click(generation))
+    }
+
     fun submitPin(pin: String) {
         val current = session ?: return
         if (state.value.connection != ConnectionState.PAIRING || state.value.pairing != PairingKind.PIN ||
@@ -239,6 +296,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             pairing = null,
             pinSubmitting = false,
             pinError = null,
+            textInputFocused = false,
             connection = if (wakingUp) ConnectionState.CONNECTING else it.connection,
             status = if (wakingUp) "Đang chờ tivi bật…" else it.status
         ) }
@@ -272,6 +330,9 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                     onVolume = { value ->
                         if (generation == token) mutableState.update { it.copy(volume = VolumeState(
                             value.level ?: it.volume.level, value.muted ?: it.volume.muted)) }
+                    },
+                    onKeyboardFocus = { focused ->
+                        if (generation == token) mutableState.update { it.copy(textInputFocused = focused) }
                     })
                 session = current
                 var retryable = false
@@ -285,8 +346,9 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                     attempt = 0
                     mutableState.update { it.copy(tv = target, connection = ConnectionState.CONNECTED,
                         status = "Đã kết nối", volume = VolumeState(), pairing = null,
-                        pinSubmitting = false, pinError = null) }
+                        pinSubmitting = false, pinError = null, textInputFocused = false) }
                     current.subscribeVolume()
+                    current.subscribeKeyboard()
                     infoJob = launch { learnWakeAddresses(current, token, true) }
                     pendingVoiceQuery?.let { query ->
                         pendingVoiceQuery = null
@@ -310,6 +372,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                             busy = false,
                             pairing = null,
                             pinSubmitting = false,
+                            textInputFocused = false,
                             status = "Đang chờ tivi bật…"
                         ) }
                     } else {
@@ -318,6 +381,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                             busy = false,
                             pairing = null,
                             pinSubmitting = false,
+                            textInputFocused = false,
                             status = when {
                                 powerOffRequested -> "Tivi đã ngắt kết nối sau lệnh nguồn."
                                 wakingUp -> "Chưa kết nối lại được sau khi chờ tivi bật."
