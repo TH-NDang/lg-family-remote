@@ -42,7 +42,7 @@ object LanRules {
 
 object Protocol {
     private val permissions = listOf("LAUNCH", "CONTROL_AUDIO", "CONTROL_INPUT_JOYSTICK",
-        "CONTROL_MOUSE_AND_KEYBOARD", "READ_INSTALLED_APPS", "READ_RUNNING_APPS", "READ_APP_STATUS",
+        "CONTROL_MOUSE_AND_KEYBOARD", "CONTROL_INPUT_TEXT", "READ_INSTALLED_APPS", "READ_RUNNING_APPS", "READ_APP_STATUS",
         "CONTROL_POWER", "READ_NETWORK_STATE")
     fun register(tv: TvConfig, pairing: PairingKind = PairingKind.PROMPT): String {
         val manifest = JSONObject().put("manifestVersion", 1).put("appVersion", "1.0")
@@ -68,6 +68,13 @@ object Protocol {
         require(key in setOf("UP", "DOWN", "LEFT", "RIGHT", "ENTER", "HOME", "BACK", "MUTE"))
         return "type:button\nname:$key\n\n"
     }
+    fun pointerMove(dx: Float, dy: Float): String {
+        require(dx.isFinite() && dy.isFinite())
+        return "type:move\ndx:$dx\ndy:$dy\ndown:0\n\n"
+    }
+    fun pointerClick(): String = "type:click\n\n"
+    fun keyboardFocused(payload: JSONObject): Boolean =
+        payload.optJSONObject("currentWidget")?.optBoolean("focus", false) == true
     fun isError(message: JSONObject): Boolean = message.optString("type") == "error" ||
         message.optJSONObject("payload")?.let { it.has("returnValue") && !it.optBoolean("returnValue") } == true
     fun volume(payload: JSONObject): VolumeState {
