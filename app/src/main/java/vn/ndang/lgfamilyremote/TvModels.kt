@@ -57,6 +57,7 @@ data class RemoteState(
     val found: List<TvConfig> = emptyList(),
     val searching: Boolean = false,
     val volume: VolumeState = VolumeState(),
+    val textInputFocused: Boolean = false,
     val busy: Boolean = false,
     val pairing: PairingKind? = null,
     val pinSubmitting: Boolean = false,
