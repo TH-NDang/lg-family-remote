@@ -8,7 +8,6 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import vn.ndang.lgfamilyremote.network.Protocol
@@ -26,13 +25,13 @@ class VoiceSearchTest {
     }
 
     @Test
-    fun searchNeedsLaunchPermissionButNotTextInputPermission() {
+    fun remoteSupportsLaunchAndTextInputPermissions() {
         val manifest = JSONObject(Protocol.register(TvConfig("192.168.1.20")))
             .getJSONObject("payload").getJSONObject("manifest")
         val permissions = manifest.getJSONArray("permissions")
         val names = (0 until permissions.length()).map { permissions.getString(it) }
         assertTrue(names.contains("LAUNCH"))
-        assertFalse(names.contains("CONTROL_INPUT_TEXT"))
+        assertTrue(names.contains("CONTROL_INPUT_TEXT"))
     }
 
     @Test
