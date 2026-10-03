@@ -1,5 +1,13 @@
 # Thay đổi
 
+## 0.3.1 — 2026-10-03
+
+- Làm rõ hai nút âm lượng bằng icon **loa + dấu “−”** và **loa + dấu “+”**.
+- Tăng kích thước icon loa từ 29dp lên **34dp**.
+- Dấu cộng/trừ được đặt trong badge tròn nhỏ ngay trên icon để dễ nhận biết bằng mắt.
+- Giữ nguyên chữ “Giảm tiếng” / “Tăng tiếng” để người lớn tuổi vẫn dễ hiểu.
+
+
 ## 0.3.0 — 2026-10-02
 
 - Làm lại tìm kiếm bằng giọng nói theo hướng **YouTube-first**.
