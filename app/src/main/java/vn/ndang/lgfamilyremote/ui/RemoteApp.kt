@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -27,11 +30,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import vn.ndang.lgfamilyremote.*
+import kotlin.math.abs
 
 @Composable
 fun RemoteApp(vm: RemoteViewModel) {
@@ -139,6 +148,10 @@ fun RemoteApp(vm: RemoteViewModel) {
                             voiceAvailable = voiceAvailable,
                             voiceSearch = { if (voiceAvailable) voiceLauncher.launch(voiceIntent) },
                             key = vm::key,
+                            replaceText = vm::replaceTextInput,
+                            textEnter = vm::textInputEnter,
+                            pointerMove = vm::pointerMove,
+                            pointerClick = vm::pointerClick,
                             volume = vm::volume,
                             mute = vm::mute
                         )
@@ -252,10 +265,38 @@ private fun RemotePanel(
     voiceAvailable: Boolean,
     voiceSearch: () -> Unit,
     key: (String) -> Unit,
+    replaceText: (String) -> Unit,
+    textEnter: () -> Unit,
+    pointerMove: (Float, Float) -> Unit,
+    pointerClick: () -> Unit,
     volume: (Boolean) -> Unit,
     mute: () -> Unit
 ) {
     val enabled = state.connection == ConnectionState.CONNECTED && !state.busy
+    var textMode by rememberSaveable { mutableStateOf(false) }
+    var mouseMode by rememberSaveable { mutableStateOf(false) }
+    var textValue by rememberSaveable { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(state.textInputFocused) {
+        if (state.textInputFocused) {
+            mouseMode = false
+            textMode = true
+        } else {
+            textValue = ""
+        }
+    }
+    LaunchedEffect(textMode, state.textInputFocused, enabled) {
+        if (textMode && enabled) {
+            kotlinx.coroutines.delay(100)
+            runCatching { focusRequester.requestFocus() }
+            keyboardController?.show()
+        } else if (!textMode) {
+            keyboardController?.hide()
+        }
+    }
+
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Shortcut("YouTube", Icons.Default.PlayArrow, Color(0xFFC62828), enabled, Modifier.weight(1f), youtube)
         Shortcut("Trang chủ", Icons.Default.Home, Color(0xFF315ACB), enabled, Modifier.weight(1f)) { key("HOME") }
@@ -270,37 +311,245 @@ private fun RemotePanel(
         Spacer(Modifier.width(10.dp))
         Text("Tìm YouTube", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
     }
-    Surface(shape = RoundedCornerShape(28.dp), color = Color.White) {
-        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally) {
-            Direction(Icons.Default.KeyboardArrowUp, "Lên", enabled, Modifier.width(96.dp)) { key("UP") }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                Direction(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Trái", enabled, Modifier.weight(1f)) { key("LEFT") }
-                Button(onClick = { key("ENTER") }, enabled = enabled,
-                    modifier = Modifier.weight(1f).heightIn(min = 76.dp), shape = RoundedCornerShape(22.dp)) {
-                    Text("OK", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                }
-                Direction(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Phải", enabled, Modifier.weight(1f)) { key("RIGHT") }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (mouseMode) {
+            TouchpadSurface(
+                enabled = enabled,
+                move = pointerMove,
+                click = pointerClick
+            )
+        } else {
+            CircularDpad(enabled = enabled, key = key)
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ModeButton(
+                icon = Icons.Default.Keyboard,
+                description = "Nhập chữ bằng bàn phím điện thoại",
+                active = textMode || state.textInputFocused,
+                enabled = enabled
+            ) {
+                textMode = !textMode
+                if (textMode) mouseMode = false
             }
-            Direction(Icons.Default.KeyboardArrowDown, "Xuống", enabled, Modifier.width(96.dp)) { key("DOWN") }
+            Spacer(Modifier.width(6.dp))
+            ModeButton(
+                icon = Icons.Default.Mouse,
+                description = "Chế độ rê chuột",
+                active = mouseMode,
+                enabled = enabled
+            ) {
+                mouseMode = !mouseMode
+                if (mouseMode) {
+                    textMode = false
+                    keyboardController?.hide()
+                }
+            }
+        }
+
+        if (textMode || state.textInputFocused) {
+            OutlinedTextField(
+                value = textValue,
+                onValueChange = {
+                    val next = it.take(500)
+                    textValue = next
+                    replaceText(next)
+                },
+                label = {
+                    Text(if (state.textInputFocused) "Nhập trên tivi" else "Nhập chữ")
+                },
+                placeholder = {
+                    Text(if (state.textInputFocused) "Gõ bằng bàn phím điện thoại"
+                        else "Chọn một ô nhập trên tivi")
+                },
+                supportingText = {
+                    Text(if (state.textInputFocused) "Tivi đang chờ nhập chữ."
+                        else "Khi tivi focus vào ô nhập, bàn phím điện thoại sẽ tự hiện.")
+                },
+                singleLine = true,
+                enabled = enabled,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
+                    textEnter()
+                    keyboardController?.hide()
+                }),
+                trailingIcon = {
+                    IconButton(onClick = textEnter, enabled = enabled) {
+                        Icon(Icons.Default.KeyboardReturn, "Gửi Enter")
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+            )
         }
     }
-    FilledTonalButton(onClick = { key("BACK") }, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-        shape = RoundedCornerShape(18.dp)) {
+
+    FilledTonalButton(
+        onClick = { key("BACK") },
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+        shape = RoundedCornerShape(18.dp)
+    ) {
         Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
-        Spacer(Modifier.width(10.dp)); Text("Quay lại", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.width(10.dp))
+        Text("Quay lại", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
     }
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         SoundButton("Giảm tiếng", Icons.AutoMirrored.Filled.VolumeDown, "−", enabled, Modifier.weight(1f)) { volume(false) }
         SoundButton("Tăng tiếng", Icons.AutoMirrored.Filled.VolumeUp, "+", enabled, Modifier.weight(1f)) { volume(true) }
     }
-    OutlinedButton(onClick = mute, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-        shape = RoundedCornerShape(18.dp)) {
+    OutlinedButton(
+        onClick = mute,
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+        shape = RoundedCornerShape(18.dp)
+    ) {
         Icon(if (state.volume.muted == true) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff, null)
         Spacer(Modifier.width(10.dp))
         Text(if (state.volume.muted == true) "Bật lại tiếng" else "Tắt tiếng", fontSize = 19.sp)
         if (state.volume.level != null) Text("  ·  ${state.volume.level}", fontSize = 17.sp)
+    }
+}
+
+@Composable
+private fun CircularDpad(enabled: Boolean, key: (String) -> Unit) {
+    Surface(
+        modifier = Modifier.size(264.dp),
+        shape = CircleShape,
+        color = Color.White,
+        tonalElevation = 2.dp,
+        shadowElevation = 2.dp
+    ) {
+        Box(Modifier.fillMaxSize().padding(12.dp)) {
+            DpadButton(
+                Icons.Default.KeyboardArrowUp, "Lên", enabled,
+                Modifier.align(Alignment.TopCenter)
+            ) { key("UP") }
+            DpadButton(
+                Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Trái", enabled,
+                Modifier.align(Alignment.CenterStart)
+            ) { key("LEFT") }
+            Button(
+                onClick = { key("ENTER") },
+                enabled = enabled,
+                modifier = Modifier.align(Alignment.Center).size(86.dp),
+                shape = CircleShape,
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Text("OK", fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            }
+            DpadButton(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight, "Phải", enabled,
+                Modifier.align(Alignment.CenterEnd)
+            ) { key("RIGHT") }
+            DpadButton(
+                Icons.Default.KeyboardArrowDown, "Xuống", enabled,
+                Modifier.align(Alignment.BottomCenter)
+            ) { key("DOWN") }
+        }
+    }
+}
+
+@Composable
+private fun DpadButton(
+    icon: ImageVector,
+    description: String,
+    enabled: Boolean,
+    modifier: Modifier,
+    click: () -> Unit
+) {
+    FilledTonalIconButton(
+        onClick = click,
+        enabled = enabled,
+        modifier = modifier.size(72.dp),
+        shape = CircleShape
+    ) {
+        Icon(icon, description, Modifier.size(40.dp))
+    }
+}
+
+@Composable
+private fun TouchpadSurface(
+    enabled: Boolean,
+    move: (Float, Float) -> Unit,
+    click: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .size(264.dp)
+            .pointerInput(enabled) {
+                if (!enabled) return@pointerInput
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    var last = down.position
+                    var travelled = 0f
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) {
+                            if (travelled < 14f) click()
+                            break
+                        }
+                        val delta = change.position - last
+                        if (delta.x != 0f || delta.y != 0f) {
+                            travelled += abs(delta.x) + abs(delta.y)
+                            move(delta.x * 1.7f, delta.y * 1.7f)
+                            last = change.position
+                            change.consume()
+                        }
+                    }
+                }
+            },
+        shape = CircleShape,
+        color = Color.White,
+        tonalElevation = 2.dp,
+        shadowElevation = 2.dp
+    ) {
+        Column(
+            Modifier.fillMaxSize().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(Icons.Default.Mouse, "Rê chuột", Modifier.size(54.dp),
+                tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(10.dp))
+            Text("Rê để di chuyển", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("Chạm để bấm", style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun ModeButton(
+    icon: ImageVector,
+    description: String,
+    active: Boolean,
+    enabled: Boolean,
+    click: () -> Unit
+) {
+    FilledTonalIconButton(
+        onClick = click,
+        enabled = enabled,
+        modifier = Modifier.size(52.dp),
+        colors = IconButtonDefaults.filledTonalIconButtonColors(
+            containerColor = if (active) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = if (active) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSecondaryContainer
+        )
+    ) {
+        Icon(icon, description, Modifier.size(27.dp))
     }
 }
 
@@ -314,14 +563,6 @@ private fun Shortcut(label: String, icon: ImageVector, color: Color, enabled: Bo
             Icon(icon, null, Modifier.size(32.dp))
             Text(label, fontSize = 21.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         }
-    }
-}
-
-@Composable
-private fun Direction(icon: ImageVector, label: String, enabled: Boolean, modifier: Modifier, click: () -> Unit) {
-    FilledTonalButton(onClick = click, enabled = enabled, modifier = modifier.heightIn(min = 62.dp),
-        shape = RoundedCornerShape(18.dp), contentPadding = PaddingValues(8.dp)) {
-        Icon(icon, contentDescription = label, modifier = Modifier.size(38.dp))
     }
 }
 
