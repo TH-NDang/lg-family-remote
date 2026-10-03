@@ -21,6 +21,7 @@ class WebOsSession internal constructor(
     clientBuilder: OkHttpClient.Builder = OkHttpClient.Builder(),
     private val onPairing: (PairingKind) -> Unit = {},
     private val onVolume: (VolumeState) -> Unit = {},
+    private val onKeyboardFocus: (Boolean) -> Unit = {},
     private val pairingPreference: PairingKind = PairingKind.PIN,
     private val endpointOverrideForTests: String? = null
 ) {
@@ -110,6 +111,10 @@ class WebOsSession internal constructor(
             if (!Protocol.isError(message)) onVolume(Protocol.volume(payload))
             return
         }
+        if (id == "keyboard") {
+            if (!Protocol.isError(message)) onKeyboardFocus(Protocol.keyboardFocused(payload))
+            return
+        }
         val waiting = pending.remove(id) ?: return
         if (Protocol.isError(message)) waiting.completeExceptionally(TvException(ErrorKind.COMMAND,
             "Tivi không thực hiện được lệnh này. Có thể model hoặc ứng dụng chưa hỗ trợ."))
@@ -178,6 +183,12 @@ class WebOsSession internal constructor(
         if (isOpen) socket?.send(Protocol.request("volume", "audio/getVolume", subscribe = true))
     }
 
+    fun subscribeKeyboard() {
+        if (isOpen) socket?.send(
+            Protocol.request("keyboard", "com.webos.service.ime/registerRemoteKeyboard", subscribe = true)
+        )
+    }
+
     private suspend fun pointerSocket(): WebSocket = pointerLock.withLock {
         pointer?.let { return@withLock it }
         val payload = request("com.webos.service.networkinput/getPointerInputSocket")
@@ -213,6 +224,32 @@ class WebOsSession internal constructor(
         val message = Protocol.button(key)
         val ws = pointerSocket()
         if (!isOpen || !ws.send(message)) throw TvException(ErrorKind.NETWORK, "Đã mất kết nối với tivi.")
+    }
+
+    suspend fun pointerMove(dx: Float, dy: Float) {
+        val ws = pointerSocket()
+        if (!isOpen || !ws.send(Protocol.pointerMove(dx, dy))) {
+            throw TvException(ErrorKind.NETWORK, "Đã mất kết nối với tivi.")
+        }
+    }
+
+    suspend fun pointerClick() {
+        val ws = pointerSocket()
+        if (!isOpen || !ws.send(Protocol.pointerClick())) {
+            throw TvException(ErrorKind.NETWORK, "Đã mất kết nối với tivi.")
+        }
+    }
+
+    suspend fun replaceText(raw: String) {
+        val text = raw.take(500)
+        request(
+            "com.webos.service.ime/insertText",
+            JSONObject().put("text", text).put("replace", true)
+        )
+    }
+
+    suspend fun sendTextEnter() {
+        request("com.webos.service.ime/sendEnterKey")
     }
 
     private suspend fun resolveYouTubeId(overrideId: String): String {
