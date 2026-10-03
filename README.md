@@ -10,6 +10,14 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.3.2
+
+- Cụm điều hướng là **D-pad tròn** với OK ở giữa.
+- Có 2 nút cạnh dưới-phải: **⌨ nhập chữ** và **🖱 rê chuột**.
+- Khi TV đang focus một ô nhập, app tự hiện vùng nhập và bật bàn phím Android; gõ trên điện thoại sẽ thay nội dung ô nhập trên TV.
+- Chế độ chuột dùng vùng tròn làm touchpad: rê để di chuyển, chạm để click.
+- Nếu nhập chữ chưa hoạt động sau khi cập nhật, vào Cài đặt → **Ghép đôi lại với tivi** một lần để TV cấp `CONTROL_INPUT_TEXT`.
+
 ## Mới trong 0.3.1
 
 - Hai nút âm lượng hiển thị icon loa lớn kèm dấu **− / +** để nhìn nhanh là biết giảm hay tăng.
