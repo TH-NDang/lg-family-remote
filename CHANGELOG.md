@@ -1,5 +1,18 @@
 # Thay đổi
 
+## 0.3.2 — 2026-10-03
+
+- Đổi cụm 4 hướng + OK sang **D-pad tròn** giống remote vật lý.
+- Thêm hai icon ở góc dưới-phải khu điều hướng: **bàn phím** và **chuột**.
+- Chế độ chuột biến vùng D-pad thành touchpad: rê ngón tay để di chuyển con trỏ, chạm để click.
+- Dùng hàng đợi pointer giới hạn để thao tác rê nhanh không tạo vô hạn coroutine/request.
+- Subscribe `com.webos.service.ime/registerRemoteKeyboard` để biết khi TV đang focus ô nhập.
+- Khi TV focus ô nhập, app tự mở vùng nhập chữ và gọi bàn phím Android; nội dung được gửi bằng `insertText` với `replace=true` để phù hợp cả gõ tiếng Việt/chỉnh sửa nội dung.
+- Thêm nút Enter trên vùng nhập và hỗ trợ phím Done của bàn phím Android.
+- Bổ sung quyền webOS `CONTROL_INPUT_TEXT`; TV đã ghép từ bản cũ có thể cần **Ghép đôi lại** một lần để cấp quyền mới.
+- Thêm kiểm thử cho trạng thái keyboard focus và frame pointer move/click.
+
+
 ## 0.3.1 — 2026-10-03
 
 - Làm rõ hai nút âm lượng bằng icon **loa + dấu “−”** và **loa + dấu “+”**.
