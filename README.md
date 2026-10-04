@@ -10,6 +10,13 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.3.5
+
+- Header màn hình remote không còn tên app: **Cài đặt + trạng thái** ở trái, **Nguồn** ở phải.
+- Touchpad chuột trải full ngang màn hình.
+- D-pad có 4 vùng bấm lớn tỏa ra 4 phía, giúp bấm mũi tên dễ trúng hơn.
+- Hai nút bàn phím/chuột nổi trong góc dưới-phải vùng điều khiển nên giao diện ngắn hơn.
+
 ## Mới trong 0.3.4
 
 - Mở app nhanh hơn: TV đã lưu hiện trạng thái **đang kiểm tra** ngay, không đứng xám chờ lâu.
@@ -109,7 +116,7 @@ Nút YouTube chỉ mở ứng dụng trên tivi, không loại bỏ quảng cáo
 
 ## Giao diện
 
-Header gồm tiêu đề, chấm kết nối, **Nguồn** và bánh răng. Bên dưới là **YouTube**, **Trang chủ**, nút **Tìm YouTube** có mic, cụm bốn hướng + **OK**, nút **Quay lại**, **Giảm tiếng / Tăng tiếng**, **Tắt tiếng / Bật lại tiếng**. Chữ tiếng Việt, vùng bấm lớn. Màn hình nhỏ hoặc cỡ chữ lớn có thể cuộn để không mất nút. Thông báo lỗi vẫn có thể xuất hiện khi thao tác thất bại; trạng thái kết nối thường ngày chỉ là chấm nhỏ.
+Header màn hình remote gồm **Cài đặt**, chấm kết nối và **Nguồn**, không hiển thị tên app. Bên dưới là **YouTube**, **Trang chủ**, nút **Tìm YouTube** có mic, cụm bốn hướng + **OK**, nút **Quay lại**, **Giảm tiếng / Tăng tiếng**, **Tắt tiếng / Bật lại tiếng**. Chữ tiếng Việt, vùng bấm lớn. Màn hình nhỏ hoặc cỡ chữ lớn có thể cuộn để không mất nút. Thông báo lỗi vẫn có thể xuất hiện khi thao tác thất bại; trạng thái kết nối thường ngày chỉ là chấm nhỏ.
 
 ## GitHub Actions
 
