@@ -321,7 +321,7 @@ private fun RemotePanel(
     FilledTonalButton(
         onClick = voiceSearch,
         enabled = enabled && voiceAvailable,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
         shape = RoundedCornerShape(18.dp)
     ) {
         Icon(Icons.Default.Mic, null, Modifier.size(28.dp))
@@ -622,7 +622,7 @@ private fun ModeButton(
 @Composable
 private fun Shortcut(label: String, icon: ImageVector, color: Color, enabled: Boolean,
                      modifier: Modifier, click: () -> Unit) {
-    Button(onClick = click, enabled = enabled, modifier = modifier.heightIn(min = 98.dp),
+    Button(onClick = click, enabled = enabled, modifier = modifier.heightIn(min = 88.dp),
         shape = RoundedCornerShape(23.dp), colors = ButtonDefaults.buttonColors(containerColor = color),
         contentPadding = PaddingValues(12.dp)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -644,7 +644,7 @@ private fun SoundButton(
     FilledTonalButton(
         onClick = click,
         enabled = enabled,
-        modifier = modifier.heightIn(min = 84.dp),
+        modifier = modifier.heightIn(min = 78.dp),
         shape = RoundedCornerShape(20.dp),
         contentPadding = PaddingValues(8.dp)
     ) {
