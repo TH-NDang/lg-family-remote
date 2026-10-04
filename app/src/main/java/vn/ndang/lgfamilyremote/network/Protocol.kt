@@ -60,6 +60,20 @@ object Protocol {
             .put("uri", "ssap://$uri").put("payload", payload).toString()
     fun pinRequest(id: String, pin: String): String =
         request(id, "pairing/setPin", JSONObject().put("pin", pin))
+
+    fun deviceUidKey(raw: String): String {
+        var value = raw.trim().lowercase()
+        if ("::" in value) value = value.substringBefore("::")
+        if (value.startsWith("urn:uuid:")) value = value.removePrefix("urn:uuid:")
+        else if (value.startsWith("uuid:")) value = value.removePrefix("uuid:")
+        return value.trim().trim('{', '}')
+    }
+
+    fun sameDeviceUid(first: String, second: String): Boolean {
+        val a = deviceUidKey(first)
+        val b = deviceUidKey(second)
+        return a.isNotBlank() && b.isNotBlank() && a == b
+    }
     fun normalizePin(raw: String): String? {
         val pin = raw.trim()
         return pin.takeIf { it.length in 4..12 && it.all { ch -> ch in '0'..'9' } }
