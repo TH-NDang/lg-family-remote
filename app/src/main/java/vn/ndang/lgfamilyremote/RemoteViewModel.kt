@@ -159,7 +159,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         catch (e: TvException) { mutableState.update { it.copy(error = e.message) }; return }
         val saved = state.value.tv
         val same = saved != null && target.secure == saved.secure &&
-            ((target.uid.isNotBlank() && target.uid == saved.uid) || target.host == saved.host)
+            (Protocol.sameDeviceUid(target.uid, saved.uid) || target.host == saved.host)
         val selected = if (same) saved!!.copy(host = target.host, name = target.name,
             uid = target.uid.ifBlank { saved.uid }, youtubeId = target.youtubeId.ifBlank { saved.youtubeId }) else target
         connect(selected, true)
@@ -306,12 +306,6 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             var attempt = 0
             while (isActive && foreground && generation == token) {
                 target = state.value.tv ?: target
-                if (!wakingUp && attempt > 0 && attempt % 3 == 1 && target.uid.isNotBlank()) {
-                    try {
-                        val relocated = discovery.scan().firstOrNull { it.uid == target.uid }
-                        if (relocated != null) target = target.copy(host = relocated.host)
-                    } catch (e: CancellationException) { throw e } catch (_: Exception) { /* Retry saved IP. */ }
-                }
                 mutableState.update { it.copy(
                     connection = ConnectionState.CONNECTING,
                     status = if (wakingUp) "Đang chờ tivi bật…"
@@ -336,6 +330,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                     })
                 session = current
                 var retryable = false
+                var rediscoverAfterFailure = false
                 try {
                     target = current.connect(
                         registrationTimeoutMs = if (wakingUp && !pairingAllowed) 4_500L else null
@@ -365,7 +360,19 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                         (problem == null || problem.kind == ErrorKind.NETWORK)
                     val wakeStillWaiting = !wakingUp || System.nanoTime() < wakeDeadlineNanos
                     retryable = networkFailure && wakeStillWaiting
-                    if (wakingUp && retryable) {
+                    rediscoverAfterFailure = retryable && target.uid.isNotBlank() &&
+                        (attempt == 0 || attempt % 3 == 2)
+
+                    if (rediscoverAfterFailure) {
+                        mutableState.update { it.copy(
+                            connection = ConnectionState.CONNECTING,
+                            busy = false,
+                            pairing = null,
+                            pinSubmitting = false,
+                            textInputFocused = false,
+                            status = "Đang tìm lại tivi trong mạng nhà…"
+                        ) }
+                    } else if (wakingUp && retryable) {
                         // Do not flash gray/offline while the TV is still booting.
                         mutableState.update { it.copy(
                             connection = ConnectionState.CONNECTING,
@@ -395,6 +402,39 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                     if (session === current) session = null
                 }
                 if (!retryable) break
+
+                if (rediscoverAfterFailure && generation == token && foreground) {
+                    try {
+                        val resolvedHost = discovery.findHostByUid(target.uid)
+                        if (resolvedHost != null && generation == token) {
+                            val hostChanged = resolvedHost != target.host
+                            target = target.copy(host = resolvedHost)
+                            mutableState.update { it.copy(
+                                tv = target,
+                                connection = ConnectionState.CONNECTING,
+                                status = if (hostChanged)
+                                    "Đã tìm thấy tivi ở địa chỉ mới. Đang kết nối…"
+                                else if (wakingUp) "Đã thấy tivi. Đang chờ khởi động…"
+                                else "Đã tìm thấy tivi. Đang kết nối lại…"
+                            ) }
+                            if (hostChanged) save(target)
+                            attempt = 0
+                            continue
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        // Discovery is best-effort; fall back to the normal reconnect loop.
+                    }
+
+                    if (generation == token && !wakingUp) {
+                        mutableState.update { it.copy(
+                            connection = ConnectionState.OFFLINE,
+                            status = "Chưa tìm thấy tivi. App sẽ tự thử lại."
+                        ) }
+                    }
+                }
+
                 attempt++
                 val retryDelay = if (wakingUp) {
                     listOf(1500L, 2000L, 2500L, 3000L)[(attempt - 1).coerceAtMost(3)]
