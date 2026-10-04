@@ -1,5 +1,16 @@
 # Thay đổi
 
+## 0.3.5 — 2026-10-04
+
+- Bỏ tên ứng dụng khỏi header màn hình remote để tiết kiệm chiều cao và giảm nhiễu.
+- Đưa nút **Cài đặt** sang góc trái; giữ chấm trạng thái cạnh đó và nút nguồn lớn ở bên phải.
+- Chế độ chuột dùng **touchpad full chiều ngang**, dạng chữ nhật bo góc thay vì vòng tròn nhỏ.
+- Hai icon **bàn phím / chuột** được đặt nổi ở góc dưới-phải vùng điều khiển, không còn chiếm một hàng riêng.
+- D-pad vẫn xoay tròn quanh OK nhưng bốn hướng dùng vùng bấm lớn kéo tỏa ra ngoài: trên/dưới 112×78dp, trái/phải 78×112dp.
+- Icon mũi tên lớn hơn, hit target lớn hơn phần icon để dễ bấm trúng.
+- Thu gọn nhẹ các nút phụ nhưng vẫn giữ vùng chạm từ khoảng 52dp trở lên để giảm nhu cầu cuộn.
+
+
 ## 0.3.4 — 2026-10-04
 
 - Tăng tốc trạng thái khi mở lại app: dữ liệu TV đã lưu được dùng ngay và trạng thái chuyển **đang kiểm tra** thay vì đứng xám.
