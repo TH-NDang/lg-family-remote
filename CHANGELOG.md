@@ -1,5 +1,17 @@
 # Thay đổi
 
+## 0.3.3 — 2026-10-04
+
+- Sửa trường hợp TV đã ghép từ trước nhưng sau một thời gian app không tự nhận ra lại cho đến khi người dùng vào **Tìm tivi**.
+- Khi kết nối tới IP đã lưu thất bại, app tự quét SSDP theo **UID của TV đã ghép**, lấy IP mới rồi kết nối lại mà không cần người dùng chọn TV thủ công.
+- Nếu IP thay đổi do DHCP, app cập nhật và lưu IP mới ngay nhưng **giữ nguyên client-key, chứng chỉ TLS, MAC Wake-on-LAN và các tùy chọn**.
+- Tìm lại TV ngay sau lần kết nối mạng thất bại đầu tiên, sau đó định kỳ thử lại trong reconnect loop thay vì chờ người dùng thao tác.
+- Cơ chế tìm lại UID cũng được dùng trong giai đoạn TV đang khởi động sau Wake-on-LAN.
+- Chuẩn hóa các dạng UID phổ biến của LG/SSDP: `uuid:...`, `urn:uuid:...`, USN có `::urn:lge-com:...` và khác biệt chữ hoa/thường.
+- Khi chọn lại TV từ màn hình tìm kiếm, UID tương đương vẫn được nhận là TV cũ nên giữ khóa ghép đôi.
+- Thêm kiểm thử nhận dạng cùng thiết bị qua nhiều định dạng UID.
+
+
 ## 0.3.2 — 2026-10-03
 
 - Đổi cụm 4 hướng + OK sang **D-pad tròn** giống remote vật lý.
