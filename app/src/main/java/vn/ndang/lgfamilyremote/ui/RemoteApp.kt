@@ -88,26 +88,46 @@ fun RemoteApp(vm: RemoteViewModel) {
             if (!state.loaded) {
                 CircularProgressIndicator(Modifier.padding(48.dp))
             } else Column(Modifier.widthIn(max = 460.dp).fillMaxSize()) {
-                // Keep the fixed compact header and the tappable dot from 0.1.1.
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    if (settings && state.tv != null) {
-                        IconButton(onClick = { settings = false }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Về màn hình điều khiển")
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (settings || state.tv == null) {
+                        if (state.tv != null) {
+                            IconButton(onClick = { settings = false }, modifier = Modifier.size(48.dp)) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Về màn hình điều khiển")
+                            }
                         }
-                    }
-                    Column(Modifier.weight(1f)) {
-                        Text(if (settings) "Thiết lập tivi" else "Điều khiển TV",
-                            fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                        if (settings) Text(state.tv?.name ?: "Dành cho cả nhà",
-                            maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    if (!settings && state.tv != null) {
-                        IconButton(onClick = { settings = true }, modifier = Modifier.semantics {
-                            contentDescription = "Kết nối tivi: ${state.status}. Mở cài đặt kết nối."
-                        }) { ConnectionDot(state) }
+                        Column(Modifier.weight(1f)) {
+                            Text("Thiết lập tivi", fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                            if (state.tv != null) {
+                                Text(
+                                    state.tv?.name ?: "Tivi nhà mình",
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    } else {
+                        IconButton(
+                            onClick = { settings = true },
+                            modifier = Modifier.size(52.dp)
+                        ) {
+                            Icon(Icons.Default.Settings, "Cài đặt kết nối tivi", Modifier.size(28.dp))
+                        }
+                        IconButton(
+                            onClick = { settings = true },
+                            modifier = Modifier
+                                .size(44.dp)
+                                .semantics {
+                                    contentDescription = "Kết nối tivi: ${state.status}. Mở cài đặt kết nối."
+                                }
+                        ) {
+                            ConnectionDot(state)
+                        }
+                        Spacer(Modifier.weight(1f))
                         val powerAction = powerActionFor(state.connection, state.busy)
                         IconButton(
                             onClick = vm::powerToggle,
@@ -128,14 +148,11 @@ fun RemoteApp(vm: RemoteViewModel) {
                                     Color(0xFF9A8A89) else Color(0xFFB3261E)
                             )
                         }
-                        IconButton(onClick = { settings = true }) {
-                            Icon(Icons.Default.Settings, "Cài đặt kết nối tivi")
-                        }
                     }
                 }
                 Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(9.dp)) {
                     if ((settings || state.tv == null) && state.error != null) {
                         ErrorCard(state.error!!, vm::clearError)
                     }
@@ -156,7 +173,7 @@ fun RemoteApp(vm: RemoteViewModel) {
                             mute = vm::mute
                         )
                     }
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(2.dp))
                 }
             }
         }
