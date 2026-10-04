@@ -113,7 +113,7 @@ fun RemoteApp(vm: RemoteViewModel) {
                     } else {
                         IconButton(
                             onClick = { settings = true },
-                            modifier = Modifier.size(52.dp)
+                            modifier = Modifier.size(46.dp)
                         ) {
                             Icon(Icons.Default.Settings, "Cài đặt kết nối tivi", Modifier.size(28.dp))
                         }
@@ -451,59 +451,88 @@ private fun RemotePanel(
 }
 
 @Composable
-private fun CircularDpad(enabled: Boolean, key: (String) -> Unit) {
+private fun CircularDpad(
+    enabled: Boolean,
+    key: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Surface(
-        modifier = Modifier.size(264.dp),
+        modifier = modifier,
         shape = CircleShape,
         color = Color.White,
         tonalElevation = 2.dp,
         shadowElevation = 2.dp
     ) {
-        Box(Modifier.fillMaxSize().padding(12.dp)) {
-            DpadButton(
-                Icons.Default.KeyboardArrowUp, "Lên", enabled,
-                Modifier.align(Alignment.TopCenter)
+        Box(Modifier.fillMaxSize().padding(7.dp)) {
+            DpadZone(
+                icon = Icons.Default.KeyboardArrowUp,
+                description = "Lên",
+                enabled = enabled,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .width(112.dp)
+                    .height(78.dp)
             ) { key("UP") }
-            DpadButton(
-                Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Trái", enabled,
-                Modifier.align(Alignment.CenterStart)
+
+            DpadZone(
+                icon = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                description = "Trái",
+                enabled = enabled,
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .width(78.dp)
+                    .height(112.dp)
             ) { key("LEFT") }
+
             Button(
                 onClick = { key("ENTER") },
                 enabled = enabled,
-                modifier = Modifier.align(Alignment.Center).size(86.dp),
+                modifier = Modifier.align(Alignment.Center).size(88.dp),
                 shape = CircleShape,
                 contentPadding = PaddingValues(0.dp)
             ) {
-                Text("OK", fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                Text("OK", fontSize = 27.sp, fontWeight = FontWeight.Bold)
             }
-            DpadButton(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight, "Phải", enabled,
-                Modifier.align(Alignment.CenterEnd)
+
+            DpadZone(
+                icon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                description = "Phải",
+                enabled = enabled,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .width(78.dp)
+                    .height(112.dp)
             ) { key("RIGHT") }
-            DpadButton(
-                Icons.Default.KeyboardArrowDown, "Xuống", enabled,
-                Modifier.align(Alignment.BottomCenter)
+
+            DpadZone(
+                icon = Icons.Default.KeyboardArrowDown,
+                description = "Xuống",
+                enabled = enabled,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .width(112.dp)
+                    .height(78.dp)
             ) { key("DOWN") }
         }
     }
 }
 
 @Composable
-private fun DpadButton(
+private fun DpadZone(
     icon: ImageVector,
     description: String,
     enabled: Boolean,
     modifier: Modifier,
     click: () -> Unit
 ) {
-    FilledTonalIconButton(
+    FilledTonalButton(
         onClick = click,
         enabled = enabled,
-        modifier = modifier.size(72.dp),
-        shape = CircleShape
+        modifier = modifier,
+        shape = RoundedCornerShape(30.dp),
+        contentPadding = PaddingValues(0.dp)
     ) {
-        Icon(icon, description, Modifier.size(40.dp))
+        Icon(icon, description, Modifier.size(45.dp))
     }
 }
 
@@ -511,11 +540,11 @@ private fun DpadButton(
 private fun TouchpadSurface(
     enabled: Boolean,
     move: (Float, Float) -> Unit,
-    click: () -> Unit
+    click: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = Modifier
-            .size(264.dp)
+        modifier = modifier
             .pointerInput(enabled) {
                 if (!enabled) return@pointerInput
                 awaitEachGesture {
@@ -539,26 +568,34 @@ private fun TouchpadSurface(
                     }
                 }
             },
-        shape = CircleShape,
+        shape = RoundedCornerShape(28.dp),
         color = Color.White,
         tonalElevation = 2.dp,
         shadowElevation = 2.dp
     ) {
-        Column(
-            Modifier.fillMaxSize().padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Row(
+            Modifier.fillMaxSize().padding(horizontal = 22.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
-            Icon(Icons.Default.Mouse, "Rê chuột", Modifier.size(54.dp),
-                tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.height(10.dp))
-            Text("Rê để di chuyển", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-            Text("Chạm để bấm", style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(
+                Icons.Default.Mouse,
+                "Rê chuột",
+                Modifier.size(46.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text("Rê để di chuyển", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    "Chạm để bấm",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
-
 @Composable
 private fun ModeButton(
     icon: ImageVector,
@@ -578,7 +615,7 @@ private fun ModeButton(
                 else MaterialTheme.colorScheme.onSecondaryContainer
         )
     ) {
-        Icon(icon, description, Modifier.size(27.dp))
+        Icon(icon, description, Modifier.size(24.dp))
     }
 }
 
