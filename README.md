@@ -10,6 +10,12 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.3.3
+
+- App tự tìm lại **đúng TV đã ghép** khi router cấp IP mới: dùng UID/SSDP, cập nhật IP và kết nối lại mà không cần vào **Tìm tivi**.
+- Client-key, chứng chỉ, MAC bật TV và cấu hình cũ vẫn được giữ nguyên; bình thường không phải xác nhận ghép đôi lại.
+- Nhận dạng UID ổn định hơn giữa các firmware LG nhờ chuẩn hóa `uuid:` / `urn:uuid:` / USN.
+
 ## Mới trong 0.3.2
 
 - Cụm điều hướng là **D-pad tròn** với OK ở giữa.
@@ -115,7 +121,7 @@ Không đưa file JKS, mật khẩu hoặc thông tin ghép đôi tivi vào repo
 
 - Android 8.0 trở lên (minSdk 26), compile/target SDK 35.
 - Kotlin + Jetpack Compose, OkHttp WebSocket, coroutines. Không SDK quảng cáo, analytics, camera, danh bạ hoặc định vị. Tìm kiếm giọng nói dùng hoạt động nhận dạng có sẵn của Android và app không xin quyền RECORD_AUDIO trực tiếp.
-- Tìm tivi bằng SSDP; ghi nhớ UUID và tìm lại IP khi UUID còn được công bố.
+- Tìm tivi bằng SSDP; ghi nhớ UUID. Khi IP cũ không còn dùng được, app tự quét nhanh theo UUID/UID, lưu IP mới và reconnect mà không cần người dùng chọn lại TV.
 - Kết nối lại khi app ở phía trước; không có dịch vụ chạy nền.
 - Khóa ghép đôi, dấu vân tay chứng chỉ và MAC tivi được mã hóa bằng Android Keystore, lưu trong thư mục không sao lưu. Đọc được cấu hình cũ không có MAC.
 - Không tự phát lại lệnh điều khiển khi nối lại, kể cả lệnh tắt nguồn. Lệnh đã tới tivi trước khi mất mạng không thể thu hồi.
