@@ -13,13 +13,15 @@ data class TvConfig(
     val clientKey: String = "",
     val certificateSha256: String = "",
     val youtubeId: String = "",
-    val wakeMacs: List<String> = emptyList()
+    val wakeMacs: List<String> = emptyList(),
+    val lastConnectedAtEpochMs: Long = 0L
 ) {
     override fun toString(): String = "$name ($host)"
     fun toJson(): JSONObject = JSONObject().put("host", host).put("name", name)
         .put("uid", uid).put("secure", secure).put("clientKey", clientKey)
         .put("certificateSha256", certificateSha256).put("youtubeId", youtubeId)
         .put("wakeMacs", JSONArray(wakeMacs))
+        .put("lastConnectedAtEpochMs", lastConnectedAtEpochMs)
     companion object {
         fun fromJson(j: JSONObject): TvConfig = TvConfig(
             host = j.getString("host"), name = j.optString("name", "Tivi nhà mình"),
@@ -28,7 +30,8 @@ data class TvConfig(
             youtubeId = j.optString("youtubeId"),
             wakeMacs = j.optJSONArray("wakeMacs")?.let { a ->
                 (0 until a.length().coerceAtMost(4)).map { a.optString(it) }.filter { it.isNotBlank() }
-            }.orEmpty()
+            }.orEmpty(),
+            lastConnectedAtEpochMs = j.optLong("lastConnectedAtEpochMs", 0L).coerceAtLeast(0L)
         )
     }
 }

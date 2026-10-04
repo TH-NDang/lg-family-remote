@@ -9,6 +9,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.selects.select
 import okhttp3.OkHttpClient
 import vn.ndang.lgfamilyremote.data.TvStore
 import vn.ndang.lgfamilyremote.network.*
@@ -31,6 +32,22 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         val generation: Int,
         val block: suspend (WebOsSession) -> Unit
     )
+
+    private sealed interface DirectConnectResult {
+        data class Success(val tv: TvConfig) : DirectConnectResult
+        data class Failure(val error: Exception) : DirectConnectResult
+    }
+
+    private sealed interface ConnectRaceEvent {
+        data class Direct(val result: DirectConnectResult) : ConnectRaceEvent
+        data class Discovery(val host: String?) : ConnectRaceEvent
+    }
+
+    private sealed interface ConnectRaceResult {
+        data class Connected(val tv: TvConfig) : ConnectRaceResult
+        data class Relocated(val host: String) : ConnectRaceResult
+        data class Failed(val error: Exception) : ConnectRaceResult
+    }
 
     // Keep memory/request pressure bounded under rapid tapping.
     // DROP_OLDEST favors what the user is doing now instead of replaying a long stale backlog.
@@ -283,6 +300,82 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    private suspend fun raceConnectAndRediscovery(
+        current: WebOsSession,
+        target: TvConfig,
+        pairingAllowed: Boolean,
+        wakingUp: Boolean,
+        attempt: Int
+    ): ConnectRaceResult = supervisorScope {
+        val registrationTimeout = when {
+            pairingAllowed -> null
+            wakingUp -> 4_500L
+            attempt == 0 -> 5_000L
+            else -> null
+        }
+
+        suspend fun directConnect(): DirectConnectResult = try {
+            DirectConnectResult.Success(current.connect(registrationTimeoutMs = registrationTimeout))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            DirectConnectResult.Failure(e)
+        }
+
+        if (pairingAllowed || target.uid.isBlank()) {
+            return@supervisorScope when (val direct = directConnect()) {
+                is DirectConnectResult.Success -> ConnectRaceResult.Connected(direct.tv)
+                is DirectConnectResult.Failure -> ConnectRaceResult.Failed(direct.error)
+            }
+        }
+
+        val direct = async { directConnect() }
+        val recentlyConnected = target.lastConnectedAtEpochMs > 0L &&
+            System.currentTimeMillis() - target.lastConnectedAtEpochMs in 0L..900_000L
+        val rediscovery = async {
+            if (attempt == 0 && recentlyConnected) delay(350L)
+            discovery.findHostByUid(
+                target.uid,
+                timeoutMs = if (wakingUp) 2_200L else 2_800L
+            )
+        }
+
+        fun directOutcome(result: DirectConnectResult): ConnectRaceResult = when (result) {
+            is DirectConnectResult.Success -> ConnectRaceResult.Connected(result.tv)
+            is DirectConnectResult.Failure -> ConnectRaceResult.Failed(result.error)
+        }
+
+        when (val first = select<ConnectRaceEvent> {
+            direct.onAwait { ConnectRaceEvent.Direct(it) }
+            rediscovery.onAwait { ConnectRaceEvent.Discovery(it) }
+        }) {
+            is ConnectRaceEvent.Direct -> when (val result = first.result) {
+                is DirectConnectResult.Success -> {
+                    rediscovery.cancel()
+                    ConnectRaceResult.Connected(result.tv)
+                }
+                is DirectConnectResult.Failure -> {
+                    val host = rediscovery.await()
+                    if (host != null && host != target.host) {
+                        ConnectRaceResult.Relocated(host)
+                    } else {
+                        ConnectRaceResult.Failed(result.error)
+                    }
+                }
+            }
+            is ConnectRaceEvent.Discovery -> {
+                val host = first.host
+                if (host != null && host != target.host) {
+                    current.close()
+                    direct.cancelAndJoin()
+                    ConnectRaceResult.Relocated(host)
+                } else {
+                    directOutcome(direct.await())
+                }
+            }
+        }
+    }
+
     private fun connect(initial: TvConfig, allowPairing: Boolean, wakingUp: Boolean = false) {
         stopConnection()
         powerOffRequested = false
@@ -297,14 +390,18 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             pinSubmitting = false,
             pinError = null,
             textInputFocused = false,
-            connection = if (wakingUp) ConnectionState.CONNECTING else it.connection,
-            status = if (wakingUp) "Đang chờ tivi bật…" else it.status
+            connection = ConnectionState.CONNECTING,
+            status = when {
+                wakingUp -> "Đang chờ tivi bật…"
+                initial.clientKey.isNotBlank() -> "Đang kiểm tra tivi…"
+                else -> "Đang kết nối tivi…"
+            }
         ) }
         connectionJob = viewModelScope.launch {
             var target = initial
             var pairingAllowed = allowPairing
             var attempt = 0
-            while (isActive && foreground && generation == token) {
+            reconnectLoop@ while (isActive && foreground && generation == token) {
                 target = state.value.tv ?: target
                 mutableState.update { it.copy(
                     connection = ConnectionState.CONNECTING,
@@ -332,9 +429,29 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                 var retryable = false
                 var rediscoverAfterFailure = false
                 try {
-                    target = current.connect(
-                        registrationTimeoutMs = if (wakingUp && !pairingAllowed) 4_500L else null
-                    )
+                    when (val race = raceConnectAndRediscovery(
+                        current = current,
+                        target = target,
+                        pairingAllowed = pairingAllowed,
+                        wakingUp = wakingUp,
+                        attempt = attempt
+                    )) {
+                        is ConnectRaceResult.Connected -> {
+                            target = race.tv.copy(lastConnectedAtEpochMs = System.currentTimeMillis())
+                        }
+                        is ConnectRaceResult.Relocated -> {
+                            target = target.copy(host = race.host)
+                            mutableState.update { it.copy(
+                                tv = target,
+                                connection = ConnectionState.CONNECTING,
+                                status = "Đã tìm thấy tivi ở địa chỉ mới. Đang kết nối…"
+                            ) }
+                            save(target)
+                            attempt = 0
+                            continue@reconnectLoop
+                        }
+                        is ConnectRaceResult.Failed -> throw race.error
+                    }
                     ensureActive()
                     save(target)
                     pairingAllowed = false

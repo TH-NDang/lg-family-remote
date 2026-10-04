@@ -10,6 +10,12 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.3.4
+
+- Mở app nhanh hơn: TV đã lưu hiện trạng thái **đang kiểm tra** ngay, không đứng xám chờ lâu.
+- App thử IP gần nhất và tìm đúng TV bằng UID/SSDP song song; IP cũ đúng thì kết nối ngay, IP đã đổi thì tự chuyển sang IP mới.
+- Chỉ hiện xanh khi kết nối webOS thật sự thành công, nên nhanh nhưng không báo sai trạng thái.
+
 ## Mới trong 0.3.3
 
 - App tự tìm lại **đúng TV đã ghép** khi router cấp IP mới: dùng UID/SSDP, cập nhật IP và kết nối lại mà không cần vào **Tìm tivi**.

@@ -1,5 +1,16 @@
 # Thay đổi
 
+## 0.3.4 — 2026-10-04
+
+- Tăng tốc trạng thái khi mở lại app: dữ liệu TV đã lưu được dùng ngay và trạng thái chuyển **đang kiểm tra** thay vì đứng xám.
+- Với TV đã ghép, kết nối tới IP gần nhất và tìm TV theo UID/SSDP được chạy **song song**.
+- Nếu WebSocket IP cũ kết nối trước, app hủy quét SSDP và chuyển xanh ngay.
+- Nếu SSDP tìm thấy cùng TV ở IP mới trước, app hủy kết nối IP cũ, lưu IP mới và kết nối lại ngay.
+- Ghi lại thời điểm kết nối thành công gần nhất; nếu TV vừa dùng gần đây, direct-IP được ưu tiên 350 ms trước khi bắt đầu SSDP để giảm multicast không cần thiết.
+- Chấm xanh vẫn chỉ xuất hiện sau khi webOS đăng ký WebSocket thành công; app không giả trạng thái kết nối từ cache.
+- Dữ liệu cấu hình cũ không có thời điểm kết nối vẫn đọc bình thường.
+
+
 ## 0.3.3 — 2026-10-04
 
 - Sửa trường hợp TV đã ghép từ trước nhưng sau một thời gian app không tự nhận ra lại cho đến khi người dùng vào **Tìm tivi**.
