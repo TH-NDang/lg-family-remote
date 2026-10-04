@@ -332,43 +332,56 @@ private fun RemotePanel(
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        if (mouseMode) {
-            TouchpadSurface(
-                enabled = enabled,
-                move = pointerMove,
-                click = pointerClick
-            )
-        } else {
-            CircularDpad(enabled = enabled, key = key)
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(if (mouseMode) 184.dp else 236.dp)
         ) {
-            ModeButton(
-                icon = Icons.Default.Keyboard,
-                description = "Nhập chữ bằng bàn phím điện thoại",
-                active = textMode || state.textInputFocused,
-                enabled = enabled
-            ) {
-                textMode = !textMode
-                if (textMode) mouseMode = false
+            if (mouseMode) {
+                TouchpadSurface(
+                    enabled = enabled,
+                    move = pointerMove,
+                    click = pointerClick,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                CircularDpad(
+                    enabled = enabled,
+                    key = key,
+                    modifier = Modifier
+                        .size(236.dp)
+                        .align(Alignment.Center)
+                )
             }
-            Spacer(Modifier.width(6.dp))
-            ModeButton(
-                icon = Icons.Default.Mouse,
-                description = "Chế độ rê chuột",
-                active = mouseMode,
-                enabled = enabled
+
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(7.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                mouseMode = !mouseMode
-                if (mouseMode) {
-                    textMode = false
-                    keyboardController?.hide()
+                ModeButton(
+                    icon = Icons.Default.Keyboard,
+                    description = "Nhập chữ bằng bàn phím điện thoại",
+                    active = textMode || state.textInputFocused,
+                    enabled = enabled
+                ) {
+                    textMode = !textMode
+                    if (textMode) mouseMode = false
+                }
+                ModeButton(
+                    icon = Icons.Default.Mouse,
+                    description = "Chế độ rê chuột",
+                    active = mouseMode,
+                    enabled = enabled
+                ) {
+                    mouseMode = !mouseMode
+                    if (mouseMode) {
+                        textMode = false
+                        keyboardController?.hide()
+                    }
                 }
             }
         }
@@ -410,7 +423,6 @@ private fun RemotePanel(
             )
         }
     }
-
     FilledTonalButton(
         onClick = { key("BACK") },
         enabled = enabled,
