@@ -29,6 +29,55 @@ fun localNetwork(context: Context): Network? {
 }
 
 class TvDiscovery(private val context: Context) {
+    suspend fun findHostByUid(rawUid: String, timeoutMs: Long = 3200L): String? = withContext(Dispatchers.IO) {
+        val targetUid = Protocol.deviceUidKey(rawUid)
+        if (targetUid.isBlank()) return@withContext null
+
+        val network = localNetwork(context)
+        val lock = context.applicationContext.getSystemService(WifiManager::class.java)
+            .createMulticastLock("lg-family-rediscovery").apply { setReferenceCounted(false) }
+        try {
+            lock.acquire()
+            DatagramSocket(null).use { socket ->
+                network?.bindSocket(socket)
+                socket.bind(InetSocketAddress(0))
+                socket.soTimeout = 450
+                val group = InetAddress.getByName("239.255.255.250")
+                val message = ("M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\n" +
+                    "MAN: \"ssdp:discover\"\r\nMX: 1\r\nST: urn:lge-com:service:webos-second-screen:1\r\n\r\n")
+                    .toByteArray(Charsets.UTF_8)
+
+                repeat(3) { index ->
+                    if (index > 0) delay(120)
+                    socket.send(DatagramPacket(message, message.size, group, 1900))
+                }
+
+                val until = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs.coerceIn(1200L, 6000L))
+                while (System.nanoTime() < until) {
+                    ensureActive()
+                    val packet = DatagramPacket(ByteArray(8192), 8192)
+                    try {
+                        socket.receive(packet)
+                    } catch (_: SocketTimeoutException) {
+                        continue
+                    }
+
+                    val host = packet.address.hostAddress ?: continue
+                    if (!LanRules.isPrivateIpv4(host)) continue
+                    val text = String(packet.data, 0, packet.length, Charsets.UTF_8)
+                    if (!text.startsWith("HTTP/1.1 200", true)) continue
+                    val headers = Protocol.ssdpHeaders(text)
+                    if (!headers["st"].orEmpty().contains("webos-second-screen", true)) continue
+                    val candidateUid = headers["usn"].orEmpty()
+                    if (Protocol.sameDeviceUid(candidateUid, rawUid)) return@withContext host
+                }
+            }
+            null
+        } finally {
+            if (lock.isHeld) lock.release()
+        }
+    }
+
     suspend fun scan(): List<TvConfig> = withContext(Dispatchers.IO) {
         val network = localNetwork(context)
         val lock = context.applicationContext.getSystemService(WifiManager::class.java)
