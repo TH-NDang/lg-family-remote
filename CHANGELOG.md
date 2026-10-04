@@ -1,5 +1,18 @@
 # Thay đổi
 
+## 0.3.6 — 2026-10-04
+
+- Gom **YouTube / Tìm / Home** thành một hàng duy nhất.
+- Ba thao tác nhanh chỉ hiển thị **icon**, không dùng màu đỏ/xanh riêng cho YouTube hoặc Home; cùng một phong cách tonal trung tính.
+- Icon YouTube đổi sang dạng màn hình video có nút play để vẫn dễ nhận biết dù không có chữ.
+- D-pad giữa đổi sang cấu trúc gọn: trụ dọc **↑ / OK / ↓**, hai vùng **← / →** lớn ở hai bên.
+- Không còn vòng tròn trắng/cánh hoa lớn quanh D-pad.
+- Hai nút **⌨ / 🖱** tiếp tục nằm ở góc dưới-phải vùng điều hướng.
+- Gom hàng cuối thành **← / 🔉− / 🔇 / 🔊+**, bỏ các hàng Back và âm lượng dài trước đó.
+- Mức âm lượng hiện tại được đưa vào badge nhỏ trên nút mute khi TV cung cấp giá trị.
+- Bố cục chính ngắn hơn đáng kể, gần cấu trúc remote cố định và giảm nhu cầu cuộn màn hình.
+
+
 ## 0.3.5 — 2026-10-04
 
 - Bỏ tên ứng dụng khỏi header màn hình remote để tiết kiệm chiều cao và giảm nhiễu.
