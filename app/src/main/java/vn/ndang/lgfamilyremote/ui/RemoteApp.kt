@@ -318,26 +318,23 @@ private fun RemotePanel(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        QuickAction(
-            label = "YouTube",
-            icon = Icons.Default.PlayArrow,
-            color = Color(0xFFC62828),
+        QuickIconButton(
+            icon = Icons.Default.SmartDisplay,
+            description = "Mở YouTube",
             enabled = enabled,
             modifier = Modifier.weight(1f),
             click = youtube
         )
-        QuickAction(
-            label = "Tìm",
+        QuickIconButton(
             icon = Icons.Default.Mic,
-            color = MaterialTheme.colorScheme.primary,
+            description = "Tìm trên YouTube bằng giọng nói",
             enabled = enabled && voiceAvailable,
             modifier = Modifier.weight(1f),
             click = voiceSearch
         )
-        QuickAction(
-            label = "Home",
+        QuickIconButton(
             icon = Icons.Default.Home,
-            color = Color(0xFF315ACB),
+            description = "Trang chủ",
             enabled = enabled,
             modifier = Modifier.weight(1f)
         ) { key("HOME") }
@@ -647,35 +644,25 @@ private fun ModeButton(
 }
 
 @Composable
-private fun QuickAction(
-    label: String,
+private fun QuickIconButton(
     icon: ImageVector,
-    color: Color,
+    description: String,
     enabled: Boolean,
     modifier: Modifier,
     click: () -> Unit
 ) {
-    Button(
+    FilledTonalButton(
         onClick = click,
         enabled = enabled,
-        modifier = modifier.heightIn(min = 72.dp),
+        modifier = modifier.heightIn(min = 64.dp),
         shape = RoundedCornerShape(20.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = color),
-        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp)
+        contentPadding = PaddingValues(0.dp)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Icon(icon, contentDescription = label, Modifier.size(27.dp))
-            Text(
-                label,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                textAlign = TextAlign.Center
-            )
-        }
+        Icon(
+            icon,
+            contentDescription = description,
+            modifier = Modifier.size(32.dp)
+        )
     }
 }
 
