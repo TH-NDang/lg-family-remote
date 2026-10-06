@@ -450,6 +450,7 @@ private fun RemotePanel(
         BottomRemoteButton(
             icon = Icons.AutoMirrored.Filled.VolumeDown,
             description = "Giảm tiếng",
+            mark = "−",
             enabled = enabled,
             modifier = Modifier.weight(1f)
         ) { volume(false) }
@@ -464,6 +465,7 @@ private fun RemotePanel(
         BottomRemoteButton(
             icon = Icons.AutoMirrored.Filled.VolumeUp,
             description = "Tăng tiếng",
+            mark = "+",
             enabled = enabled,
             modifier = Modifier.weight(1f)
         ) { volume(true) }
@@ -660,6 +662,7 @@ private fun BottomRemoteButton(
     enabled: Boolean,
     modifier: Modifier,
     active: Boolean = false,
+    mark: String? = null,
     click: () -> Unit
 ) {
     FilledTonalButton(
@@ -673,9 +676,23 @@ private fun BottomRemoteButton(
             contentColor = if (active) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSecondaryContainer
         ),
-        contentPadding = PaddingValues(4.dp)
+        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
     ) {
-        Icon(icon, contentDescription = description, Modifier.size(32.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(icon, contentDescription = description, Modifier.size(30.dp))
+            if (!mark.isNullOrBlank()) {
+                Spacer(Modifier.width(1.dp))
+                Text(
+                    mark,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 24.sp
+                )
+            }
+        }
     }
 }
 
