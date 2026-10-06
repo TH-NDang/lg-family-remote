@@ -68,7 +68,7 @@ jobs:
           (cd out/preview && sha256sum *.apk > SHA256SUMS.txt)
           if [ -f app/build/outputs/apk/release/app-release.apk ]; then
             mkdir -p out/release
-            cp app/build/outputs/apk/release/app-release.apk out/release/lg-family-remote-v0.3.7.apk
+            cp app/build/outputs/apk/release/app-release.apk out/release/lg-family-remote-v0.3.8.apk
             (cd out/release && sha256sum *.apk > SHA256SUMS.txt)
           fi
       - name: Upload preview APK
@@ -96,14 +96,14 @@ jobs:
           set -euo pipefail
           TAG="preview-${GITHUB_RUN_NUMBER}"
           DIR=out/preview
-          TITLE="Điều khiển TV 0.3.7 · bản thử #${GITHUB_RUN_NUMBER}"
+          TITLE="Điều khiển TV 0.3.8 · bản thử #${GITHUB_RUN_NUMBER}"
           if [ "$SIGNED" = true ]; then
             TAG="family-${GITHUB_RUN_NUMBER}"
             DIR=out/release
-            TITLE="Điều khiển TV 0.3.7 · bản ký riêng #${GITHUB_RUN_NUMBER}"
+            TITLE="Điều khiển TV 0.3.8 · bản ký riêng #${GITHUB_RUN_NUMBER}"
           fi
           {
-            echo '# Điều khiển TV 0.3.7'
+            echo '# Điều khiển TV 0.3.8'
             echo
             echo 'Mới: hỗ trợ PIN pairing: TV hiện mã → nhập trên điện thoại → lưu client-key → lần sau tự kết nối.'
             echo 'Tìm kiếm bằng mic được đổi sang YouTube deep-link: nói xong mở thẳng trang kết quả YouTube.'
@@ -122,6 +122,7 @@ jobs:
             echo 'YouTube, Tìm và Home nằm trên một hàng icon-only, cùng phong cách trung tính.'
             echo 'Back, Vol−, Mute và Vol+ gom thành một hàng; D-pad đổi sang ↑/OK/↓ với ←/→ lớn hai bên.'
             echo 'D-pad được gom thành một card thống nhất; bỏ badge âm lượng thừa để giao diện sạch hơn.'
+            echo 'Tăng chiều cao card điều hướng lên khoảng 254dp và touchpad lên khoảng 220dp để bố cục cân hơn.'
             echo 'Bấm tắt chuyển trạng thái khỏi CONNECTED ngay: remote khóa tức thì và chấm không còn xanh.'
             echo 'Sau tắt chủ động, app chặn reconnect tự động ngắn hạn để socket cũ không làm chấm xanh trở lại.'
             echo 'Chuẩn hóa UID uuid:/urn:uuid:/USN để không bỏ sót đúng TV đã ghép.'
@@ -134,7 +135,7 @@ jobs:
             echo
             echo 'Android 8 trở lên. Cùng mạng nhà → chọn tivi LG webOS → chọn Cho phép trên tivi.'
             echo 'Nếu tivi yêu cầu quyền nguồn mới: Cài đặt → Nhập IP / tùy chọn → Ghép đôi lại.'
-            echo 'Người dùng đã xác nhận bản 0.1.0 hoạt động; chức năng nguồn 0.3.7 cần thử trên tivi thực tế.'
+            echo 'Người dùng đã xác nhận bản 0.1.0 hoạt động; chức năng nguồn 0.3.8 cần thử trên tivi thực tế.'
             if [ "$SIGNED" != true ]; then
               echo 'Bản thử dùng khóa debug tạm; nếu không cập nhật đè được, cần gỡ bản thử cũ và ghép đôi lại.'
               echo 'Bản dùng lâu dài cần ANDROID_SIGNING_BUNDLE. Xem docs/SIGNING.md.'
