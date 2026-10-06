@@ -1,5 +1,13 @@
 # Thay đổi
 
+## 0.3.9 — 2026-10-06
+
+- Thêm dấu **− / +** ngay cạnh icon loa ở hai nút giảm/tăng âm lượng.
+- Dấu được đặt trực tiếp cạnh icon, không dùng badge tròn và không đưa lại số âm lượng để giao diện vẫn sạch.
+- Đổi tên hiển thị ứng dụng từ **Điều khiển TV** thành **TV Remote**.
+- Bản debug/preview hiển thị **TV Remote · Thử** để dễ phân biệt với bản ký chính thức.
+
+
 ## 0.3.8 — 2026-10-06
 
 - Tăng chiều cao vùng điều khiển giữa để tận dụng tốt phần trống màn hình.
