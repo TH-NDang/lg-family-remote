@@ -350,7 +350,7 @@ private fun RemotePanel(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if (mouseMode) 176.dp else 210.dp)
+                .height(if (mouseMode) 220.dp else 260.dp)
         ) {
             if (mouseMode) {
                 TouchpadSurface(
@@ -365,7 +365,7 @@ private fun RemotePanel(
                     key = key,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(204.dp)
+                        .height(254.dp)
                         .align(Alignment.TopCenter)
                 )
             }
@@ -489,8 +489,8 @@ private fun CircularDpad(
                 enabled = enabled,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .width(126.dp)
-                    .height(62.dp)
+                    .width(132.dp)
+                    .height(72.dp)
             ) { key("UP") }
 
             DirectionHitArea(
@@ -500,7 +500,7 @@ private fun CircularDpad(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .width(96.dp)
-                    .height(126.dp)
+                    .height(142.dp)
             ) { key("LEFT") }
 
             Button(
@@ -520,7 +520,7 @@ private fun CircularDpad(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .width(96.dp)
-                    .height(126.dp)
+                    .height(142.dp)
             ) { key("RIGHT") }
 
             DirectionHitArea(
@@ -529,8 +529,8 @@ private fun CircularDpad(
                 enabled = enabled,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .width(126.dp)
-                    .height(62.dp)
+                    .width(132.dp)
+                    .height(72.dp)
             ) { key("DOWN") }
         }
     }
