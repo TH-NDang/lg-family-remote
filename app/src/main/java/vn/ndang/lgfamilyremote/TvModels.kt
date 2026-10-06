@@ -39,7 +39,7 @@ data class VolumeState(val level: Int? = null, val muted: Boolean? = null)
 enum class ErrorKind { NETWORK, PAIRING_REQUIRED, REJECTED, CERTIFICATE, COMMAND, PROTOCOL }
 class TvException(val kind: ErrorKind, message: String, cause: Throwable? = null) : IOException(message, cause)
 enum class PairingKind { PROMPT, PIN }
-enum class ConnectionState { IDLE, CONNECTING, PAIRING, CONNECTED, OFFLINE }
+enum class ConnectionState { IDLE, CONNECTING, PAIRING, CONNECTED, SHUTTING_DOWN, OFFLINE }
 enum class PowerAction { TURN_ON, TURN_OFF, NONE }
 
 fun powerActionFor(connection: ConnectionState, busy: Boolean): PowerAction {
@@ -47,7 +47,7 @@ fun powerActionFor(connection: ConnectionState, busy: Boolean): PowerAction {
     return when (connection) {
         ConnectionState.CONNECTED -> PowerAction.TURN_OFF
         ConnectionState.IDLE, ConnectionState.OFFLINE -> PowerAction.TURN_ON
-        ConnectionState.CONNECTING, ConnectionState.PAIRING -> PowerAction.NONE
+        ConnectionState.CONNECTING, ConnectionState.PAIRING, ConnectionState.SHUTTING_DOWN -> PowerAction.NONE
     }
 }
 
