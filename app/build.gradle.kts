@@ -12,7 +12,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = (System.getenv("APP_VERSION_CODE") ?: "7").toInt()
-        versionName = "0.3.8"
+        versionName = "0.3.9"
         vectorDrawables.useSupportLibrary = true
     }
     signingConfigs {
@@ -29,11 +29,11 @@ android {
         debug {
             applicationIdSuffix = ".preview"
             versionNameSuffix = "-preview"
-            resValue("string", "app_name", "Điều khiển TV · Thử")
+            resValue("string", "app_name", "TV Remote · Thử")
         }
         release {
             isMinifyEnabled = false
-            resValue("string", "app_name", "Điều khiển TV")
+            resValue("string", "app_name", "TV Remote")
             if (!signingPath.isNullOrBlank()) signingConfig = signingConfigs.getByName("family")
         }
     }
