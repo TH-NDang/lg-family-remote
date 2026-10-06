@@ -17,7 +17,7 @@ class PowerTest {
         assertEquals(PowerAction.TURN_OFF, powerActionFor(ConnectionState.CONNECTED, false))
         assertEquals(PowerAction.TURN_ON, powerActionFor(ConnectionState.OFFLINE, false))
         assertEquals(PowerAction.TURN_ON, powerActionFor(ConnectionState.IDLE, false))
-        assertEquals(PowerAction.NONE, powerActionFor(ConnectionState.CONNECTING, false))
+        assertEquals(PowerAction.TURN_ON, powerActionFor(ConnectionState.CONNECTING, false))
         assertEquals(PowerAction.NONE, powerActionFor(ConnectionState.PAIRING, false))
         assertEquals(PowerAction.NONE, powerActionFor(ConnectionState.SHUTTING_DOWN, false))
         assertEquals(PowerAction.NONE, powerActionFor(ConnectionState.CONNECTED, true))
