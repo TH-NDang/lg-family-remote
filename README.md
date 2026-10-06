@@ -10,6 +10,11 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.3.8
+
+- Vùng điều khiển giữa cao hơn và cân hơn với màn hình: D-pad khoảng **254dp**, touchpad khoảng **220dp**.
+- Các vùng bấm mũi tên được kéo giãn nhẹ để dễ thao tác hơn mà không làm các hàng khác to thêm.
+
 ## Mới trong 0.3.7
 
 - Khu điều hướng là **một card gọn**; mũi tên có vùng bấm lớn nhưng không còn các khối nền rời.
