@@ -1,5 +1,18 @@
 # Thay đổi
 
+## 0.3.7 — 2026-10-06
+
+- Làm lại khu điều hướng thành **một card thống nhất** thay vì nhiều khối rời.
+- Bốn mũi tên chỉ hiển thị icon nhưng vẫn giữ vùng bấm lớn; **OK** vẫn là nút chính ở giữa.
+- Touchpad khi kích hoạt dùng cùng phong cách card, full ngang và gần như không có chữ.
+- Hàng cuối chỉ còn **Back / Vol− / Mute / Vol+** dạng icon; bỏ badge `+`, `−` và số âm lượng gây rối.
+- Nút Mute đổi trạng thái bằng màu active thay vì badge.
+- Sửa lỗi bấm tắt TV nhưng remote vẫn sáng và chấm vẫn xanh: app chuyển ngay sang `SHUTTING_DOWN`, khóa remote và đổi chấm sang xám ngay khi bấm tắt.
+- Sau khi gửi lệnh tắt thành công, app chuyển Offline, reset volume/text-focus và tạm chặn reconnect tự động khoảng 20 giây để socket cũ không kéo trạng thái xanh trở lại.
+- Nếu lệnh tắt thất bại nhưng WebSocket vẫn còn, app khôi phục Connected để tiếp tục điều khiển.
+- Bấm Bật, Thử lại hoặc Ghép đôi lại sẽ xóa khoảng chặn reconnect ngay.
+
+
 ## 0.3.6 — 2026-10-04
 
 - Gom **YouTube / Tìm / Home** thành một hàng duy nhất.
