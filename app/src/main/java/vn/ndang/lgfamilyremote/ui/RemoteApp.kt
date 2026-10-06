@@ -237,7 +237,7 @@ private fun ConnectionDot(state: RemoteState) {
     val color = when (state.connection) {
         ConnectionState.CONNECTED -> Color(0xFF257545)
         ConnectionState.CONNECTING, ConnectionState.PAIRING -> Color(0xFFB07900)
-        else -> Color(0xFF8A929E)
+        ConnectionState.SHUTTING_DOWN, ConnectionState.IDLE, ConnectionState.OFFLINE -> Color(0xFF8A929E)
     }
     Box(Modifier.size(10.dp).background(color, CircleShape))
 }
@@ -256,7 +256,9 @@ private fun ErrorCard(message: String, dismiss: () -> Unit) {
 @Composable
 private fun ConnectionCard(state: RemoteState, retry: () -> Unit, settings: () -> Unit, cancel: () -> Unit) {
     val connected = state.connection == ConnectionState.CONNECTED
-    val connecting = state.connection in listOf(ConnectionState.CONNECTING, ConnectionState.PAIRING)
+    val connecting = state.connection in listOf(
+        ConnectionState.CONNECTING, ConnectionState.PAIRING, ConnectionState.SHUTTING_DOWN
+    )
     Surface(shape = RoundedCornerShape(18.dp), color = if (connected) Color(0xFFE8F3EC) else Color(0xFFEAF0F7)) {
         Column(Modifier.fillMaxWidth().padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -362,8 +364,8 @@ private fun RemotePanel(
                     enabled = enabled,
                     key = key,
                     modifier = Modifier
-                        .width(278.dp)
-                        .height(196.dp)
+                        .fillMaxWidth()
+                        .height(204.dp)
                         .align(Alignment.TopCenter)
                 )
             }
@@ -448,15 +450,13 @@ private fun RemotePanel(
         BottomRemoteButton(
             icon = Icons.AutoMirrored.Filled.VolumeDown,
             description = "Giảm tiếng",
-            badge = "−",
             enabled = enabled,
             modifier = Modifier.weight(1f)
         ) { volume(false) }
         BottomRemoteButton(
-            icon = if (state.volume.muted == true)
-                Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+            icon = Icons.AutoMirrored.Filled.VolumeOff,
             description = if (state.volume.muted == true) "Bật lại tiếng" else "Tắt tiếng",
-            badge = state.volume.level?.toString(),
+            active = state.volume.muted == true,
             enabled = enabled,
             modifier = Modifier.weight(1f),
             click = mute
@@ -464,7 +464,6 @@ private fun RemotePanel(
         BottomRemoteButton(
             icon = Icons.AutoMirrored.Filled.VolumeUp,
             description = "Tăng tiếng",
-            badge = "+",
             enabled = enabled,
             modifier = Modifier.weight(1f)
         ) { volume(true) }
@@ -477,86 +476,87 @@ private fun CircularDpad(
     key: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier) {
-        Surface(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .width(126.dp)
-                .fillMaxHeight(),
-            shape = RoundedCornerShape(36.dp),
-            color = Color.White,
-            tonalElevation = 2.dp,
-            shadowElevation = 2.dp
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(vertical = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(32.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        tonalElevation = 1.dp
+    ) {
+        Box(Modifier.fillMaxSize().padding(8.dp)) {
+            DirectionHitArea(
+                icon = Icons.Default.KeyboardArrowUp,
+                description = "Lên",
+                enabled = enabled,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .width(126.dp)
+                    .height(62.dp)
+            ) { key("UP") }
+
+            DirectionHitArea(
+                icon = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                description = "Trái",
+                enabled = enabled,
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .width(96.dp)
+                    .height(126.dp)
+            ) { key("LEFT") }
+
+            Button(
+                onClick = { key("ENTER") },
+                enabled = enabled,
+                modifier = Modifier.align(Alignment.Center).size(86.dp),
+                shape = CircleShape,
+                contentPadding = PaddingValues(0.dp)
             ) {
-                DirectionPadButton(
-                    icon = Icons.Default.KeyboardArrowUp,
-                    description = "Lên",
-                    enabled = enabled,
-                    modifier = Modifier.width(108.dp).height(58.dp)
-                ) { key("UP") }
-
-                Button(
-                    onClick = { key("ENTER") },
-                    enabled = enabled,
-                    modifier = Modifier.size(82.dp),
-                    shape = CircleShape,
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Text("OK", fontSize = 26.sp, fontWeight = FontWeight.Bold)
-                }
-
-                DirectionPadButton(
-                    icon = Icons.Default.KeyboardArrowDown,
-                    description = "Xuống",
-                    enabled = enabled,
-                    modifier = Modifier.width(108.dp).height(58.dp)
-                ) { key("DOWN") }
+                Text("OK", fontSize = 26.sp, fontWeight = FontWeight.Bold)
             }
+
+            DirectionHitArea(
+                icon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                description = "Phải",
+                enabled = enabled,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .width(96.dp)
+                    .height(126.dp)
+            ) { key("RIGHT") }
+
+            DirectionHitArea(
+                icon = Icons.Default.KeyboardArrowDown,
+                description = "Xuống",
+                enabled = enabled,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .width(126.dp)
+                    .height(62.dp)
+            ) { key("DOWN") }
         }
-
-        DirectionPadButton(
-            icon = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-            description = "Trái",
-            enabled = enabled,
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .width(78.dp)
-                .height(112.dp)
-        ) { key("LEFT") }
-
-        DirectionPadButton(
-            icon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            description = "Phải",
-            enabled = enabled,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .width(78.dp)
-                .height(112.dp)
-        ) { key("RIGHT") }
     }
 }
 
 @Composable
-private fun DirectionPadButton(
+private fun DirectionHitArea(
     icon: ImageVector,
     description: String,
     enabled: Boolean,
     modifier: Modifier,
     click: () -> Unit
 ) {
-    FilledTonalButton(
+    TextButton(
         onClick = click,
         enabled = enabled,
         modifier = modifier,
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(24.dp),
         contentPadding = PaddingValues(0.dp)
     ) {
-        Icon(icon, description, Modifier.size(44.dp))
+        Icon(
+            icon,
+            contentDescription = description,
+            modifier = Modifier.size(46.dp),
+            tint = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
@@ -592,34 +592,21 @@ private fun TouchpadSurface(
                     }
                 }
             },
-        shape = RoundedCornerShape(28.dp),
-        color = Color.White,
-        tonalElevation = 2.dp,
-        shadowElevation = 2.dp
+        shape = RoundedCornerShape(32.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        tonalElevation = 1.dp
     ) {
-        Row(
-            Modifier.fillMaxSize().padding(horizontal = 22.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(
                 Icons.Default.Mouse,
-                "Rê chuột",
-                Modifier.size(46.dp),
-                tint = MaterialTheme.colorScheme.primary
+                contentDescription = "Rê chuột: rê để di chuyển, chạm để bấm",
+                modifier = Modifier.size(46.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(Modifier.width(12.dp))
-            Column {
-                Text("Rê để di chuyển", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                Text(
-                    "Chạm để bấm",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
         }
     }
 }
+
 @Composable
 private fun ModeButton(
     icon: ImageVector,
@@ -672,7 +659,7 @@ private fun BottomRemoteButton(
     description: String,
     enabled: Boolean,
     modifier: Modifier,
-    badge: String? = null,
+    active: Boolean = false,
     click: () -> Unit
 ) {
     FilledTonalButton(
@@ -680,31 +667,15 @@ private fun BottomRemoteButton(
         enabled = enabled,
         modifier = modifier.heightIn(min = 62.dp),
         shape = RoundedCornerShape(18.dp),
+        colors = ButtonDefaults.filledTonalButtonColors(
+            containerColor = if (active) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = if (active) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSecondaryContainer
+        ),
         contentPadding = PaddingValues(4.dp)
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(icon, contentDescription = description, Modifier.size(31.dp))
-            if (!badge.isNullOrBlank()) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = 10.dp, y = (-9).dp)
-                        .size(21.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            badge.take(3),
-                            fontSize = if (badge.length >= 2) 10.sp else 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = 14.sp
-                        )
-                    }
-                }
-            }
-        }
+        Icon(icon, contentDescription = description, Modifier.size(32.dp))
     }
 }
 
