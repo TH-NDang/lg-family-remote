@@ -10,6 +10,13 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.3.7
+
+- Khu điều hướng là **một card gọn**; mũi tên có vùng bấm lớn nhưng không còn các khối nền rời.
+- Hàng dưới chỉ còn 4 icon **Back / Vol− / Mute / Vol+**, bỏ badge gây rối.
+- Khi bấm **Tắt TV**, remote bị khóa và chấm chuyển xám ngay; không còn giữ xanh trong lúc TV đang shutdown.
+- App tạm ngăn reconnect tự động sau lệnh tắt để trạng thái cũ không bật xanh trở lại.
+
 ## Mới trong 0.3.6
 
 - Hàng trên chỉ còn 3 icon: **YouTube / Mic / Home**, không màu thương hiệu và không chữ.
