@@ -10,6 +10,11 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.3.10
+
+- Khi mở app và chấm còn **vàng**, nút nguồn vẫn bấm được để Wake TV ngay.
+- Không cần đợi app chuyển xám mới bật TV; bấm nguồn sẽ chuyển sang trạng thái **Đang chờ tivi bật…** và tiếp tục reconnect.
+
 ## Mới trong 0.3.9
 
 - Nút âm lượng hiển thị rõ **loa −** và **loa +**.
