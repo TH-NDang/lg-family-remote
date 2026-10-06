@@ -1,5 +1,15 @@
 # Thay đổi
 
+## 0.3.10 — 2026-10-06
+
+- Sửa trải nghiệm khi mới mở app: trạng thái **CONNECTING/chấm vàng** không còn khóa nút nguồn.
+- Ở trạng thái vàng, bấm nguồn sẽ gửi **Wake-on-LAN ngay** thay vì bắt người dùng chờ đến khi app chuyển xám.
+- Ngay sau khi bấm nguồn, trạng thái chuyển sang **Đang chờ tivi bật…** và giữ luồng reconnect nhanh hiện có.
+- Nếu TV đang bật và kết nối thành công trong lúc gửi Wake, app tự chuyển xanh bình thường.
+- Giữ khóa nút nguồn ở `PAIRING` và `SHUTTING_DOWN` để tránh gửi lệnh chồng chéo.
+- Bổ sung test cho quyết định nguồn ở trạng thái `CONNECTING`.
+
+
 ## 0.3.9 — 2026-10-06
 
 - Thêm dấu **− / +** ngay cạnh icon loa ở hai nút giảm/tăng âm lượng.
