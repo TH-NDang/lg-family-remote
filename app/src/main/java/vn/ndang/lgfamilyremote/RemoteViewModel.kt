@@ -1,6 +1,7 @@
 package vn.ndang.lgfamilyremote
 
 import android.app.Application
+import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
@@ -67,6 +68,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     private var powerOffRequested = false
+    private var powerOffSuppressUntilElapsedMs = 0L
     private var pendingVoiceQuery: String? = null
 
     init {
@@ -123,7 +125,18 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         if (foreground) return
         foreground = true
         val current = state.value.tv
-        if (state.value.loaded && current != null && current.clientKey.isNotBlank()) connect(current, false)
+        if (state.value.loaded && current != null && current.clientKey.isNotBlank()) {
+            if (SystemClock.elapsedRealtime() < powerOffSuppressUntilElapsedMs) {
+                mutableState.update { it.copy(
+                    connection = ConnectionState.OFFLINE,
+                    busy = false,
+                    textInputFocused = false,
+                    status = "Tivi vừa được tắt."
+                ) }
+            } else {
+                connect(current, false)
+            }
+        }
     }
     fun onStop() {
         foreground = false
@@ -172,6 +185,8 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
     fun pair(target: TvConfig) {
+        powerOffRequested = false
+        powerOffSuppressUntilElapsedMs = 0L
         try { LanRules.requireHost(target.host) }
         catch (e: TvException) { mutableState.update { it.copy(error = e.message) }; return }
         val saved = state.value.tv
@@ -181,8 +196,14 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             uid = target.uid.ifBlank { saved.uid }, youtubeId = target.youtubeId.ifBlank { saved.youtubeId }) else target
         connect(selected, true)
     }
-    fun retry() { state.value.tv?.let { connect(it, it.clientKey.isBlank()) } }
+    fun retry() {
+        powerOffRequested = false
+        powerOffSuppressUntilElapsedMs = 0L
+        state.value.tv?.let { connect(it, it.clientKey.isBlank()) }
+    }
     fun repair() {
+        powerOffRequested = false
+        powerOffSuppressUntilElapsedMs = 0L
         state.value.tv?.let { connect(it.copy(clientKey = "", certificateSha256 = ""), true) }
     }
     fun cancelPairing() {
@@ -604,41 +625,92 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun powerOff() = command { current ->
+    fun powerOff() {
+        val current = session ?: return
+        if (!current.isOpen || state.value.busy || state.value.connection != ConnectionState.CONNECTED) return
+
+        val token = generation
         powerOffRequested = true
-        try {
-            if (state.value.tv?.wakeMacs.isNullOrEmpty()) {
-                learnWakeAddresses(current, generation, true)
-            }
-            if (state.value.tv?.wakeMacs.isNullOrEmpty()) {
+        drainRemoteQueue()
+        drainPointerQueue()
+        commandJob?.cancel()
+
+        mutableState.update { it.copy(
+            connection = ConnectionState.SHUTTING_DOWN,
+            busy = true,
+            error = null,
+            notice = null,
+            textInputFocused = false,
+            status = "Đang tắt tivi…"
+        ) }
+
+        commandJob = viewModelScope.launch {
+            try {
+                if (state.value.tv?.wakeMacs.isNullOrEmpty()) {
+                    learnWakeAddresses(current, token, true)
+                }
+                if (state.value.tv?.wakeMacs.isNullOrEmpty()) {
+                    throw TvException(
+                        ErrorKind.COMMAND,
+                        "App chưa lấy được địa chỉ MAC của tivi nên chưa tắt để tránh không bật lại được. Hãy ghép đôi lại hoặc nhập MAC trong Cài đặt."
+                    )
+                }
+
+                val acknowledged = current.requestPowerOff()
+                powerOffSuppressUntilElapsedMs = SystemClock.elapsedRealtime() + 20_000L
+
+                connectionJob?.cancel()
+                infoJob?.cancel()
+                current.close()
+                if (session === current) session = null
+
+                if (generation == token) {
+                    mutableState.update { it.copy(
+                        connection = ConnectionState.OFFLINE,
+                        busy = false,
+                        volume = VolumeState(),
+                        textInputFocused = false,
+                        status = if (acknowledged) "Tivi đã nhận yêu cầu tắt."
+                            else "Tivi đang tắt.",
+                        notice = null
+                    ) }
+                }
+            } catch (e: CancellationException) {
+                if (generation == token) {
+                    powerOffRequested = false
+                    val stillConnected = session === current && current.isOpen
+                    mutableState.update { it.copy(
+                        connection = if (stillConnected) ConnectionState.CONNECTED else ConnectionState.OFFLINE,
+                        busy = false,
+                        status = if (stillConnected) "Đã kết nối" else "Đã mất kết nối với tivi."
+                    ) }
+                }
+                throw e
+            } catch (e: Exception) {
                 powerOffRequested = false
-                throw TvException(
-                    ErrorKind.COMMAND,
-                    "App chưa lấy được địa chỉ MAC của tivi nên chưa tắt để tránh không bật lại được. Hãy ghép đôi lại hoặc nhập MAC trong Cài đặt."
-                )
+                powerOffSuppressUntilElapsedMs = 0L
+                if (generation == token) {
+                    val stillConnected = session === current && current.isOpen
+                    val message = if (e is TvException && e.kind == ErrorKind.COMMAND)
+                        "Tivi chưa thực hiện lệnh tắt. Thử Cài đặt → Ghép đôi lại nếu cần cấp quyền nguồn."
+                    else (e as? TvException)?.message ?: "Chưa gửi được lệnh tắt. Hãy kiểm tra kết nối tivi."
+                    mutableState.update { it.copy(
+                        connection = if (stillConnected) ConnectionState.CONNECTED else ConnectionState.OFFLINE,
+                        busy = false,
+                        status = if (stillConnected) "Đã kết nối" else "Đã mất kết nối với tivi.",
+                        error = message
+                    ) }
+                }
             }
-            val acknowledged = current.requestPowerOff()
-            connectionJob?.cancel()
-            infoJob?.cancel()
-            current.close()
-            if (session === current) session = null
-            mutableState.update { it.copy(connection = ConnectionState.OFFLINE, busy = false,
-                status = if (acknowledged) "Tivi đã nhận yêu cầu tắt."
-                    else "Tivi đã ngắt kết nối; hãy kiểm tra màn hình để xác nhận đã tắt.",
-                notice = null) }
-        } catch (e: CancellationException) {
-            powerOffRequested = false
-            throw e
-        } catch (e: Exception) {
-            powerOffRequested = false
-            if (e is TvException && e.kind == ErrorKind.COMMAND) throw TvException(ErrorKind.COMMAND,
-                "Tivi chưa thực hiện lệnh tắt. Thử Cài đặt → Nhập IP / tùy chọn → Ghép đôi lại để cấp quyền nguồn.", e)
-            throw e
         }
     }
+
     fun powerOn() {
         val tv = state.value.tv ?: return
-        if (state.value.busy || state.value.connection == ConnectionState.PAIRING) return
+        if (state.value.busy || state.value.connection == ConnectionState.PAIRING ||
+            state.value.connection == ConnectionState.SHUTTING_DOWN) return
+        powerOffRequested = false
+        powerOffSuppressUntilElapsedMs = 0L
         val token = generation
         mutableState.update { it.copy(busy = true, error = null) }
         commandJob = viewModelScope.launch {
