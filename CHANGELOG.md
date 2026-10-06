@@ -1,5 +1,14 @@
 # Thay đổi
 
+## 0.3.8 — 2026-10-06
+
+- Tăng chiều cao vùng điều khiển giữa để tận dụng tốt phần trống màn hình.
+- Card D-pad tăng từ khoảng **204dp lên 254dp**; vùng chứa tổng khoảng **260dp**.
+- Touchpad khi bật tăng lên khoảng **220dp**.
+- Vùng bấm mũi tên trên/dưới cao hơn và hai vùng trái/phải cũng được kéo dài nhẹ để cân với card mới.
+- Giữ nguyên hàng icon trên và hàng Back / Vol− / Mute / Vol+ phía dưới.
+
+
 ## 0.3.7 — 2026-10-06
 
 - Làm lại khu điều hướng thành **một card thống nhất** thay vì nhiều khối rời.
