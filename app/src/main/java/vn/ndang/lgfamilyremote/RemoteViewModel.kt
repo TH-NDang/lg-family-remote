@@ -599,13 +599,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         val current = session
         if (current == null || !current.isOpen || state.value.busy) return
         val token = generation
-        mutableState.update { it.copy(
-            connection = ConnectionState.CONNECTING,
-            busy = true,
-            error = null,
-            notice = null,
-            status = "Đang chờ tivi bật…"
-        ) }
+        mutableState.update { it.copy(busy = true, error = null) }
         commandJob = viewModelScope.launch {
             try { block(current) }
             catch (e: CancellationException) { throw e }
@@ -718,7 +712,13 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         powerOffRequested = false
         powerOffSuppressUntilElapsedMs = 0L
         val token = generation
-        mutableState.update { it.copy(busy = true, error = null) }
+        mutableState.update { it.copy(
+            connection = ConnectionState.CONNECTING,
+            busy = true,
+            error = null,
+            notice = null,
+            status = "Đang chờ tivi bật…"
+        ) }
         commandJob = viewModelScope.launch {
             var reconnect = false
             try {
