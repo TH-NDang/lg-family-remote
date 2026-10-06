@@ -46,8 +46,8 @@ fun powerActionFor(connection: ConnectionState, busy: Boolean): PowerAction {
     if (busy) return PowerAction.NONE
     return when (connection) {
         ConnectionState.CONNECTED -> PowerAction.TURN_OFF
-        ConnectionState.IDLE, ConnectionState.OFFLINE -> PowerAction.TURN_ON
-        ConnectionState.CONNECTING, ConnectionState.PAIRING, ConnectionState.SHUTTING_DOWN -> PowerAction.NONE
+        ConnectionState.IDLE, ConnectionState.CONNECTING, ConnectionState.OFFLINE -> PowerAction.TURN_ON
+        ConnectionState.PAIRING, ConnectionState.SHUTTING_DOWN -> PowerAction.NONE
     }
 }
 
