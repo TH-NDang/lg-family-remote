@@ -78,8 +78,9 @@ object Protocol {
         val pin = raw.trim()
         return pin.takeIf { it.length in 4..12 && it.all { ch -> ch in '0'..'9' } }
     }
+    const val SETTINGS_APP_ID = "com.palm.app.settings"
     fun button(key: String): String {
-        require(key in setOf("UP", "DOWN", "LEFT", "RIGHT", "ENTER", "HOME", "BACK", "MUTE"))
+        require(key in setOf("UP", "DOWN", "LEFT", "RIGHT", "ENTER", "HOME", "BACK", "MUTE", "MENU"))
         return "type:button\nname:$key\n\n"
     }
     fun pointerMove(dx: Float, dy: Float): String {

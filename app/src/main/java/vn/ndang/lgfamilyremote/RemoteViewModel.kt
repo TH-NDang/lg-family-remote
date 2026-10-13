@@ -615,6 +615,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     fun volume(up: Boolean) = remoteCommand { it.changeVolume(up) }
     fun mute() = remoteCommand { it.toggleMute() }
     fun youtube() = remoteCommand { it.launchYouTube(state.value.tv?.youtubeId.orEmpty()) }
+    fun tvSettings() = remoteCommand { it.openSettings() }
 
     fun powerToggle() {
         drainRemoteQueue()

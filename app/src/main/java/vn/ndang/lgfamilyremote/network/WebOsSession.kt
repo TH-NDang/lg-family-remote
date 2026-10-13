@@ -278,6 +278,18 @@ class WebOsSession internal constructor(
         request("system.launcher/launch", JSONObject().put("id", id))
         return id
     }
+    /**
+     * Launching the Settings app is acknowledged by the TV. Only an explicit rejection falls
+     * back to the remote's settings (MENU) key; a timeout may still open Settings late.
+     */
+    suspend fun openSettings() {
+        try {
+            request("system.launcher/launch", JSONObject().put("id", Protocol.SETTINGS_APP_ID))
+        } catch (e: TvException) {
+            if (e.kind != ErrorKind.COMMAND || e.cause is TimeoutCancellationException) throw e
+            button("MENU")
+        }
+    }
     suspend fun changeVolume(up: Boolean) { request(if (up) "audio/volumeUp" else "audio/volumeDown") }
     suspend fun toggleMute() {
         val state = Protocol.volume(request("audio/getVolume"))

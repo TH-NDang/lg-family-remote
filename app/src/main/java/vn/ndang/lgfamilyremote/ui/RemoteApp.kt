@@ -162,6 +162,7 @@ fun RemoteApp(vm: RemoteViewModel) {
                         RemotePanel(
                             state = state,
                             youtube = vm::youtube,
+                            tvSettings = vm::tvSettings,
                             voiceAvailable = voiceAvailable,
                             voiceSearch = { if (voiceAvailable) voiceLauncher.launch(voiceIntent) },
                             key = vm::key,
@@ -281,6 +282,7 @@ private fun ConnectionCard(state: RemoteState, retry: () -> Unit, settings: () -
 private fun RemotePanel(
     state: RemoteState,
     youtube: () -> Unit,
+    tvSettings: () -> Unit,
     voiceAvailable: Boolean,
     voiceSearch: () -> Unit,
     key: (String) -> Unit,
@@ -340,6 +342,13 @@ private fun RemotePanel(
             enabled = enabled,
             modifier = Modifier.weight(1f)
         ) { key("HOME") }
+        QuickIconButton(
+            icon = Icons.Default.SettingsApplications,
+            description = "Mở cài đặt trên tivi",
+            enabled = enabled,
+            modifier = Modifier.weight(1f),
+            click = tvSettings
+        )
     }
 
     Column(

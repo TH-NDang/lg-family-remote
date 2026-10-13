@@ -14,6 +14,7 @@ Ghi model TV, phiên bản webOS, model điện thoại và Android; không chia
 - [ ] Chấp nhận → đóng app → mở lại, không phải ghép đôi lại.
 - [ ] YouTube mở trên TV, không mở trên điện thoại. Ứng dụng YouTube chưa cài phải báo lỗi.
 - [ ] Home, Back, bốn hướng và OK hoạt động trong Home / YouTube.
+- [ ] Nút **Cài đặt tivi** mở menu Cài đặt trên TV; Back/điều hướng dùng được trong menu. Ghi lại model nào phải dùng phím MENU dự phòng.
 - [ ] Tăng/giảm tiếng, tắt tiếng và bật lại tiếng; kiểm tra cả âm thanh ngoài nếu dùng soundbar.
 - [ ] Dùng remote vật lý đổi âm lượng: app cập nhật nếu TV hỗ trợ subscription.
 - [ ] Mất Wi-Fi rồi bật lại: tự nối lại khi app phía trước; không phát lại lệnh cũ.
