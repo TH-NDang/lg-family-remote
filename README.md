@@ -10,6 +10,13 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.3.11
+
+- Hàng icon trên có thêm nút **Cài đặt tivi** (bánh răng trong khung) cạnh **Home**: bấm để mở menu Cài đặt ngay trên TV.
+- App mở ứng dụng Cài đặt của webOS (`com.palm.app.settings`). Nếu firmware từ chối, app tự chuyển sang gửi phím **MENU**.
+- Dùng quyền `LAUNCH` và điều hướng đã có, **không cần ghép đôi lại**.
+- Bánh răng ở góc trái header vẫn là cài đặt kết nối của app trên điện thoại.
+
 ## Mới trong 0.3.10
 
 - Khi mở app và chấm còn **vàng**, nút nguồn vẫn bấm được để Wake TV ngay.
@@ -135,7 +142,7 @@ Sau khi yêu cầu tắt TV, app dừng thử kết nối lại để tránh qu�
 
 1. Bật tivi bằng remote thường. Điện thoại và tivi cần ở cùng mạng nhà; tivi có thể cắm LAN vào cùng router.
 2. Mở app → **Tìm tivi** → chọn đúng tivi → **Cho phép** trên màn hình tivi. Chỉ ghép đôi trên mạng tin cậy.
-3. Những lần sau mở app sẽ tự kết nối đến tivi đã lưu: **YouTube**, **Trang chủ**, **Tìm kiếm bằng giọng nói**, điều hướng / **OK**, **Quay lại**, tăng/giảm âm lượng và tắt tiếng.
+3. Những lần sau mở app sẽ tự kết nối đến tivi đã lưu: **YouTube**, **Trang chủ**, **Tìm kiếm bằng giọng nói**, điều hướng / **OK**, **Quay lại**, mở **Cài đặt tivi**, tăng/giảm âm lượng và tắt tiếng.
 
 Cài đặt nằm trong nút bánh răng, không chiếm màn hình điều khiển. Mỗi điện thoại cần thiết lập riêng.
 
@@ -145,7 +152,7 @@ Nút YouTube chỉ mở ứng dụng trên tivi, không loại bỏ quảng cáo
 
 ## Giao diện
 
-Header màn hình remote gồm **Cài đặt**, chấm kết nối và **Nguồn**, không hiển thị tên app. Bên dưới là một hàng icon **YouTube / Mic / Home**, D-pad gọn với **OK**, hai nút **bàn phím / chuột**, rồi một hàng **Back / Vol− / Mute / Vol+**. Chữ tiếng Việt, vùng bấm lớn. Màn hình nhỏ hoặc cỡ chữ lớn có thể cuộn để không mất nút. Thông báo lỗi vẫn có thể xuất hiện khi thao tác thất bại; trạng thái kết nối thường ngày chỉ là chấm nhỏ.
+Header màn hình remote gồm **Cài đặt**, chấm kết nối và **Nguồn**, không hiển thị tên app. Bên dưới là một hàng icon **YouTube / Mic / Home / Cài đặt tivi**, D-pad gọn với **OK**, hai nút **bàn phím / chuột**, rồi một hàng **Back / Vol− / Mute / Vol+**. Chữ tiếng Việt, vùng bấm lớn. Màn hình nhỏ hoặc cỡ chữ lớn có thể cuộn để không mất nút. Thông báo lỗi vẫn có thể xuất hiện khi thao tác thất bại; trạng thái kết nối thường ngày chỉ là chấm nhỏ.
 
 ## GitHub Actions
 

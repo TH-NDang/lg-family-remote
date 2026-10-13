@@ -1,5 +1,15 @@
 # Thay đổi
 
+## 0.3.11 — 2026-10-13
+
+- Thêm nút **Cài đặt tivi** vào hàng icon trên: **YouTube / Mic / Home / Cài đặt tivi**.
+- Bấm nút sẽ mở ứng dụng Cài đặt của webOS qua `system.launcher/launch` với `com.palm.app.settings`; TV xác nhận lệnh nên lỗi được báo đúng.
+- Nếu TV từ chối mở ứng dụng Cài đặt, app gửi phím **MENU** qua pointer socket như phím bánh răng trên remote LG.
+- Nếu TV không phản hồi lệnh mở, app không gửi thêm phím MENU để tránh mở chồng hai lần.
+- Không thêm quyền mới: dùng `LAUNCH` và điều khiển con trỏ đã có, không cần ghép đôi lại.
+- Icon dùng bánh răng trong khung để phân biệt với bánh răng cài đặt kết nối trên header.
+- Bổ sung test cho mở Cài đặt, fallback phím MENU và không lặp lệnh khi TV im lặng.
+
 ## 0.3.10 — 2026-10-06
 
 - Sửa trải nghiệm khi mới mở app: trạng thái **CONNECTING/chấm vàng** không còn khóa nút nguồn.
