@@ -10,6 +10,14 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.3.12
+
+- Nút cài đặt app trên header đổi thành icon **☰ (ba gạch)**, không còn trùng với bánh răng.
+- Hàng trên trở lại 3 icon **YouTube / Mic / Home**.
+- Nút **Cài đặt tivi (⚙)** chuyển xuống hàng dưới, chung với **Back / Vol− / Mute / Vol+**: **⚙ / ← / 🔉− / 🔇 / 🔊+**.
+- **Nói để nhập vào ô trên tivi**: chọn ô nhập trên TV bằng **OK** → app tự mở ô nhập → bấm **mic** và nói → chữ vào đúng ô đang chọn. Nút mic ở hàng trên cũng tự nhập vào ô khi TV đang chọn ô nhập.
+- **Trong YouTube**: app YouTube trên TV dùng bàn phím riêng nên không báo ô nhập cho app. Khi TV không có ô nhập nào được chọn, ô nhập trên điện thoại thành **Tìm trên YouTube**: gõ hoặc nói rồi bấm tìm, YouTube mở kết quả cho nội dung đó.
+
 ## Mới trong 0.3.11
 
 - Hàng icon trên có thêm nút **Cài đặt tivi** (bánh răng trong khung) cạnh **Home**: bấm để mở menu Cài đặt ngay trên TV.
@@ -144,7 +152,7 @@ Sau khi yêu cầu tắt TV, app dừng thử kết nối lại để tránh qu�
 2. Mở app → **Tìm tivi** → chọn đúng tivi → **Cho phép** trên màn hình tivi. Chỉ ghép đôi trên mạng tin cậy.
 3. Những lần sau mở app sẽ tự kết nối đến tivi đã lưu: **YouTube**, **Trang chủ**, **Tìm kiếm bằng giọng nói**, điều hướng / **OK**, **Quay lại**, mở **Cài đặt tivi**, tăng/giảm âm lượng và tắt tiếng.
 
-Cài đặt nằm trong nút bánh răng, không chiếm màn hình điều khiển. Mỗi điện thoại cần thiết lập riêng.
+Cài đặt kết nối nằm trong nút **☰** trên header, không chiếm màn hình điều khiển. Mỗi điện thoại cần thiết lập riêng.
 
 Không tìm được tivi? Mở **Nhập IP / tùy chọn** và nhập IP nội bộ của tivi. Mặc định dùng WSS cổng 3001. Chỉ bật **TV cũ: WS cổng 3000** khi cần; chế độ này không mã hóa và app không tự chuyển sang nó. Mạng khách có tính năng cách ly thiết bị có thể chặn kết nối.
 
@@ -152,7 +160,7 @@ Nút YouTube chỉ mở ứng dụng trên tivi, không loại bỏ quảng cáo
 
 ## Giao diện
 
-Header màn hình remote gồm **Cài đặt**, chấm kết nối và **Nguồn**, không hiển thị tên app. Bên dưới là một hàng icon **YouTube / Mic / Home / Cài đặt tivi**, D-pad gọn với **OK**, hai nút **bàn phím / chuột**, rồi một hàng **Back / Vol− / Mute / Vol+**. Chữ tiếng Việt, vùng bấm lớn. Màn hình nhỏ hoặc cỡ chữ lớn có thể cuộn để không mất nút. Thông báo lỗi vẫn có thể xuất hiện khi thao tác thất bại; trạng thái kết nối thường ngày chỉ là chấm nhỏ.
+Header màn hình remote gồm **☰ (cài đặt kết nối)**, chấm kết nối và **Nguồn**, không hiển thị tên app. Bên dưới là một hàng icon **YouTube / Mic / Home**, D-pad gọn với **OK**, hai nút **bàn phím / chuột**, rồi một hàng **Cài đặt tivi / Back / Vol− / Mute / Vol+**. Khi TV đang chọn một ô nhập, ô nhập trên điện thoại gõ và nói thẳng vào ô đó; khi không có ô nào được chọn (ví dụ trong YouTube), ô nhập dùng để tìm trên YouTube. Chữ tiếng Việt, vùng bấm lớn. Màn hình nhỏ hoặc cỡ chữ lớn có thể cuộn để không mất nút. Thông báo lỗi vẫn có thể xuất hiện khi thao tác thất bại; trạng thái kết nối thường ngày chỉ là chấm nhỏ.
 
 ## GitHub Actions
 

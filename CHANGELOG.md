@@ -1,5 +1,16 @@
 # Thay đổi
 
+## 0.3.12 — 2026-10-14
+
+- Header: nút cài đặt kết nối của app đổi từ bánh răng sang icon **☰ (Menu)**.
+- Hàng trên chỉ còn **YouTube / Mic / Home**.
+- Nút **Cài đặt tivi** dùng icon bánh răng và chuyển xuống hàng dưới: **Cài đặt tivi / Back / Vol− / Mute / Vol+** (5 nút, giảm khoảng cách và padding để vừa màn hình hẹp).
+- Thêm **nói để nhập vào ô trên tivi**: khi webOS báo đang focus một ô nhập, nút mic (cả ở hàng trên và trong ô nhập) gửi câu nói vào đúng ô đó bằng `com.webos.service.ime/insertText` (`replace: true`).
+- Đích của giọng nói được chốt lúc bấm mic, không phải lúc có kết quả; nếu mất kết nối trong lúc nói, app giữ câu nói và gửi sau khi kết nối lại như tìm YouTube trước đây.
+- Ô nhập khi **không** có ô nào được focus trên TV (ví dụ ô tìm kiếm riêng của YouTube) chuyển thành **Tìm trên YouTube**: gõ không gửi từng ký tự sang TV nữa, bấm Tìm/Enter hoặc nói để mở kết quả YouTube bằng deep-link.
+- Ô nhập trên điện thoại được xóa mỗi khi TV focus hoặc bỏ focus một ô, để bản nháp YouTube không ghi đè chữ trên TV và ngược lại.
+- Bổ sung test cho lệnh `insertText` thay nội dung ô đang focus.
+
 ## 0.3.11 — 2026-10-13
 
 - Thêm nút **Cài đặt tivi** vào hàng icon trên: **YouTube / Mic / Home / Cài đặt tivi**.
