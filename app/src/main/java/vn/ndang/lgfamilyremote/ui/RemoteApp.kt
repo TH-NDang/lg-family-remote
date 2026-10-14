@@ -450,21 +450,8 @@ private fun RemotePanel(
     }
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(7.dp)
     ) {
-        BottomRemoteButton(
-            icon = Icons.Default.Settings,
-            description = "Mở cài đặt trên tivi",
-            enabled = enabled,
-            modifier = Modifier.weight(1f),
-            click = tvSettings
-        )
-        BottomRemoteButton(
-            icon = Icons.AutoMirrored.Filled.ArrowBack,
-            description = "Quay lại",
-            enabled = enabled,
-            modifier = Modifier.weight(1f)
-        ) { key("BACK") }
         BottomRemoteButton(
             icon = Icons.AutoMirrored.Filled.VolumeDown,
             description = "Giảm tiếng",
@@ -487,6 +474,24 @@ private fun RemotePanel(
             enabled = enabled,
             modifier = Modifier.weight(1f)
         ) { volume(true) }
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
+        BottomRemoteButton(
+            icon = Icons.Default.Settings,
+            description = "Mở cài đặt trên tivi",
+            enabled = enabled,
+            modifier = Modifier.weight(1f),
+            click = tvSettings
+        )
+        BottomRemoteButton(
+            icon = Icons.AutoMirrored.Filled.ArrowBack,
+            description = "Quay lại",
+            enabled = enabled,
+            modifier = Modifier.weight(1f)
+        ) { key("BACK") }
     }
 }
 
@@ -702,7 +707,7 @@ private fun BottomRemoteButton(
             contentColor = if (active) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSecondaryContainer
         ),
-        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp)
+        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
