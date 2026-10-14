@@ -10,6 +10,10 @@ Cũng có thể tải qua **Actions → Build Android APK → lần chạy thàn
 
 **Bản thử dùng khóa debug tạm:** bản ở lần build khác có thể cần gỡ bản thử cũ, cài lại và ghép đôi lại. Để cập nhật đè ổn định, dùng khóa riêng theo [hướng dẫn ký APK](docs/SIGNING.md). Bản ký riêng được cài tách biệt với bản thử.
 
+## Mới trong 0.3.13
+
+- Phía dưới D-pad chia thành 2 hàng: **Vol− / Mute / Vol+**, ngay dưới là **Cài đặt tivi (⚙) / Back**.
+
 ## Mới trong 0.3.12
 
 - Nút cài đặt app trên header đổi thành icon **☰ (ba gạch)**, không còn trùng với bánh răng.
@@ -160,7 +164,7 @@ Nút YouTube chỉ mở ứng dụng trên tivi, không loại bỏ quảng cáo
 
 ## Giao diện
 
-Header màn hình remote gồm **☰ (cài đặt kết nối)**, chấm kết nối và **Nguồn**, không hiển thị tên app. Bên dưới là một hàng icon **YouTube / Mic / Home**, D-pad gọn với **OK**, hai nút **bàn phím / chuột**, rồi một hàng **Cài đặt tivi / Back / Vol− / Mute / Vol+**. Khi TV đang chọn một ô nhập, ô nhập trên điện thoại gõ và nói thẳng vào ô đó; khi không có ô nào được chọn (ví dụ trong YouTube), ô nhập dùng để tìm trên YouTube. Chữ tiếng Việt, vùng bấm lớn. Màn hình nhỏ hoặc cỡ chữ lớn có thể cuộn để không mất nút. Thông báo lỗi vẫn có thể xuất hiện khi thao tác thất bại; trạng thái kết nối thường ngày chỉ là chấm nhỏ.
+Header màn hình remote gồm **☰ (cài đặt kết nối)**, chấm kết nối và **Nguồn**, không hiển thị tên app. Bên dưới là một hàng icon **YouTube / Mic / Home**, D-pad gọn với **OK**, hai nút **bàn phím / chuột**, rồi hàng **Vol− / Mute / Vol+** và dưới cùng là **Cài đặt tivi / Back**. Khi TV đang chọn một ô nhập, ô nhập trên điện thoại gõ và nói thẳng vào ô đó; khi không có ô nào được chọn (ví dụ trong YouTube), ô nhập dùng để tìm trên YouTube. Chữ tiếng Việt, vùng bấm lớn. Màn hình nhỏ hoặc cỡ chữ lớn có thể cuộn để không mất nút. Thông báo lỗi vẫn có thể xuất hiện khi thao tác thất bại; trạng thái kết nối thường ngày chỉ là chấm nhỏ.
 
 ## GitHub Actions
 

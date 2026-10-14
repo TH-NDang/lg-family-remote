@@ -1,5 +1,10 @@
 # Thay đổi
 
+## 0.3.13 — 2026-10-14
+
+- Tách hàng dưới thành 2 hàng: **Vol− / Mute / Vol+** ở trên, **Cài đặt tivi / Back** ngay bên dưới.
+- Mỗi hàng ít nút hơn nên trả lại khoảng cách 7dp và padding nút như trước bản 0.3.12.
+
 ## 0.3.12 — 2026-10-14
 
 - Header: nút cài đặt kết nối của app đổi từ bánh răng sang icon **☰ (Menu)**.
