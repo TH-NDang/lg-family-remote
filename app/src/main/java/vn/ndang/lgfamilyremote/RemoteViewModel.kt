@@ -69,7 +69,9 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     )
     private var powerOffRequested = false
     private var powerOffSuppressUntilElapsedMs = 0L
-    private var pendingVoiceQuery: String? = null
+    /** Spoken/typed text waiting for a connection: a YouTube search, or text for the focused TV field. */
+    private data class PendingSpeech(val text: String, val intoTvField: Boolean)
+    private var pendingSpeech: PendingSpeech? = null
 
     init {
         viewModelScope.launch {
@@ -213,7 +215,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             status = "Đã dừng kết nối. Bấm Thử lại khi sẵn sàng.") }
     }
     fun forget() {
-        pendingVoiceQuery = null
+        pendingSpeech = null
         stopConnection()
         viewModelScope.launch {
             try {
@@ -268,17 +270,31 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     }
     fun readWakeAddresses() = command { learnWakeAddresses(it, generation, false) }
 
-    fun voiceSearch(raw: String) {
+    fun searchYouTube(raw: String) {
         val query = raw.trim().replace(Regex("\\s+"), " ").take(200)
-        if (query.isBlank()) return
-        pendingVoiceQuery = query
+        if (query.isNotBlank()) speak(PendingSpeech(query, intoTvField = false))
+    }
+
+    /** Text for the TV input that was focused when the mic was pressed; replaces that field. */
+    fun dictateIntoTvField(raw: String) {
+        val text = raw.trim().take(500)
+        if (text.isNotBlank()) speak(PendingSpeech(text, intoTvField = true))
+    }
+
+    private fun speak(action: PendingSpeech) {
+        pendingSpeech = action
         if (state.value.connection == ConnectionState.CONNECTED && session?.isOpen == true && !state.value.busy) {
-            pendingVoiceQuery = null
-            remoteCommand { it.launchYouTubeSearch(query, state.value.tv?.youtubeId.orEmpty()) }
+            pendingSpeech = null
+            remoteCommand { runSpeech(it, action) }
         } else if (foreground && state.value.tv != null &&
             state.value.connection in listOf(ConnectionState.IDLE, ConnectionState.OFFLINE)) {
             retry()
         }
+    }
+
+    private suspend fun runSpeech(current: WebOsSession, action: PendingSpeech) {
+        if (action.intoTvField) current.replaceText(action.text)
+        else current.launchYouTubeSearch(action.text, state.value.tv?.youtubeId.orEmpty())
     }
 
     fun replaceTextInput(text: String) {
@@ -483,11 +499,9 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                     current.subscribeVolume()
                     current.subscribeKeyboard()
                     infoJob = launch { learnWakeAddresses(current, token, true) }
-                    pendingVoiceQuery?.let { query ->
-                        pendingVoiceQuery = null
-                        remoteQueue.trySend(RemoteTask(token) {
-                            it.launchYouTubeSearch(query, state.value.tv?.youtubeId.orEmpty())
-                        })
+                    pendingSpeech?.let { action ->
+                        pendingSpeech = null
+                        remoteQueue.trySend(RemoteTask(token) { runSpeech(it, action) })
                     }
                     throw current.awaitClosed()
                 } catch (e: CancellationException) { throw e }

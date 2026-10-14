@@ -15,6 +15,8 @@ Ghi model TV, phiên bản webOS, model điện thoại và Android; không chia
 - [ ] YouTube mở trên TV, không mở trên điện thoại. Ứng dụng YouTube chưa cài phải báo lỗi.
 - [ ] Home, Back, bốn hướng và OK hoạt động trong Home / YouTube.
 - [ ] Nút **Cài đặt tivi** mở menu Cài đặt trên TV; Back/điều hướng dùng được trong menu. Ghi lại model nào phải dùng phím MENU dự phòng.
+- [ ] Chọn một ô nhập dùng bàn phím TV (trình duyệt, Cài đặt → Wi-Fi, LG Store): app tự mở ô nhập; bấm mic, nói → chữ vào đúng ô đó; gõ tiếp vẫn đúng.
+- [ ] Trong YouTube: ô nhập hiện **Tìm trên YouTube**; gõ hoặc nói → YouTube mở kết quả đúng nội dung.
 - [ ] Tăng/giảm tiếng, tắt tiếng và bật lại tiếng; kiểm tra cả âm thanh ngoài nếu dùng soundbar.
 - [ ] Dùng remote vật lý đổi âm lượng: app cập nhật nếu TV hỗ trợ subscription.
 - [ ] Mất Wi-Fi rồi bật lại: tự nối lại khi app phía trước; không phát lại lệnh cũ.

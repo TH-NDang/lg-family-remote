@@ -35,6 +35,44 @@ class VoiceSearchTest {
     }
 
     @Test
+    fun dictationReplacesTextOfFocusedTvField() = runBlocking {
+        val server = MockWebServer()
+        val seen = ConcurrentLinkedQueue<JSONObject>()
+        server.enqueue(MockResponse().withWebSocketUpgrade(object : WebSocketListener() {
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                val json = JSONObject(text)
+                if (json.optString("type") == "register") {
+                    webSocket.send("""{"id":"register","type":"registered","payload":{"client-key":"key"}}""")
+                } else {
+                    seen.add(json)
+                    webSocket.send(JSONObject().put("id", json.getString("id")).put("type", "response")
+                        .put("payload", JSONObject().put("returnValue", true)).toString())
+                }
+            }
+        }))
+        server.start()
+        val client = WebOsSession(
+            TvConfig("192.168.1.20", secure = false),
+            true,
+            endpointOverrideForTests = server.url("/").toString().replace("http://", "ws://")
+        )
+        try {
+            withTimeout(4000) {
+                client.connect()
+                client.replaceText("mật khẩu wifi")
+            }
+            assertEquals(1, seen.size)
+            val insert = seen.first()
+            assertEquals("ssap://com.webos.service.ime/insertText", insert.getString("uri"))
+            assertEquals("mật khẩu wifi", insert.getJSONObject("payload").getString("text"))
+            assertTrue(insert.getJSONObject("payload").getBoolean("replace"))
+        } finally {
+            client.close()
+            server.shutdown()
+        }
+    }
+
+    @Test
     fun voiceSearchLaunchesYoutubeSearchDeepLink() = runBlocking {
         val server = MockWebServer()
         val seen = ConcurrentLinkedQueue<JSONObject>()

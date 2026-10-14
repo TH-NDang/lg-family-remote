@@ -55,27 +55,6 @@ fun RemoteApp(vm: RemoteViewModel) {
     var settings by rememberSaveable { mutableStateOf(false) }
     var confirm by remember { mutableStateOf("") }
     var pin by rememberSaveable(state.tv?.host) { mutableStateOf("") }
-    val context = LocalContext.current
-    val voiceIntent = remember {
-        Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "vi-VN")
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "vi-VN")
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Nói nội dung cần tìm trên YouTube")
-        }
-    }
-    val voiceAvailable = remember(context) {
-        voiceIntent.resolveActivity(context.packageManager) != null
-    }
-    val voiceLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                ?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() }?.let(vm::voiceSearch)
-        }
-    }
     LaunchedEffect(state.connection) {
         if (state.connection == ConnectionState.CONNECTED) settings = false
     }
@@ -115,7 +94,7 @@ fun RemoteApp(vm: RemoteViewModel) {
                             onClick = { settings = true },
                             modifier = Modifier.size(46.dp)
                         ) {
-                            Icon(Icons.Default.Settings, "Cài đặt kết nối tivi", Modifier.size(28.dp))
+                            Icon(Icons.Default.Menu, "Cài đặt kết nối tivi", Modifier.size(28.dp))
                         }
                         IconButton(
                             onClick = { settings = true },
@@ -163,8 +142,8 @@ fun RemoteApp(vm: RemoteViewModel) {
                             state = state,
                             youtube = vm::youtube,
                             tvSettings = vm::tvSettings,
-                            voiceAvailable = voiceAvailable,
-                            voiceSearch = { if (voiceAvailable) voiceLauncher.launch(voiceIntent) },
+                            searchYouTube = vm::searchYouTube,
+                            dictate = vm::dictateIntoTvField,
                             key = vm::key,
                             replaceText = vm::replaceTextInput,
                             textEnter = vm::textInputEnter,
@@ -283,8 +262,8 @@ private fun RemotePanel(
     state: RemoteState,
     youtube: () -> Unit,
     tvSettings: () -> Unit,
-    voiceAvailable: Boolean,
-    voiceSearch: () -> Unit,
+    searchYouTube: (String) -> Unit,
+    dictate: (String) -> Unit,
     key: (String) -> Unit,
     replaceText: (String) -> Unit,
     textEnter: () -> Unit,
@@ -299,14 +278,36 @@ private fun RemotePanel(
     var textValue by rememberSaveable { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val context = LocalContext.current
+    val voiceAvailable = remember(context) {
+        speechIntent("").resolveActivity(context.packageManager) != null
+    }
+    // Where speech goes is decided when the mic is pressed, not when the result returns.
+    var speechIntoTvField by rememberSaveable { mutableStateOf(false) }
+    val voiceLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode != Activity.RESULT_OK) return@rememberLauncherForActivityResult
+        val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            ?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() } ?: return@rememberLauncherForActivityResult
+        textValue = spoken.take(500)
+        if (speechIntoTvField) dictate(spoken) else searchYouTube(spoken)
+    }
+    val listen: (Boolean) -> Unit = { intoTvField ->
+        speechIntoTvField = intoTvField
+        voiceLauncher.launch(speechIntent(
+            if (intoTvField) "Nói nội dung cần nhập vào ô trên tivi" else "Nói nội dung cần tìm trên YouTube"
+        ))
+    }
 
     LaunchedEffect(state.textInputFocused) {
         if (state.textInputFocused) {
             mouseMode = false
             textMode = true
-        } else {
-            textValue = ""
         }
+        // A newly focused or blurred TV field starts empty, so a YouTube draft never
+        // replaces TV text and old TV text is never searched by accident.
+        textValue = ""
     }
     LaunchedEffect(textMode, state.textInputFocused, enabled) {
         if (textMode && enabled) {
@@ -331,24 +332,17 @@ private fun RemotePanel(
         )
         QuickIconButton(
             icon = Icons.Default.Mic,
-            description = "Tìm trên YouTube bằng giọng nói",
+            description = if (state.textInputFocused) "Nói để nhập vào ô đang chọn trên tivi"
+                else "Tìm trên YouTube bằng giọng nói",
             enabled = enabled && voiceAvailable,
-            modifier = Modifier.weight(1f),
-            click = voiceSearch
-        )
+            modifier = Modifier.weight(1f)
+        ) { listen(state.textInputFocused) }
         QuickIconButton(
             icon = Icons.Default.Home,
             description = "Trang chủ",
             enabled = enabled,
             modifier = Modifier.weight(1f)
         ) { key("HOME") }
-        QuickIconButton(
-            icon = Icons.Default.SettingsApplications,
-            description = "Mở cài đặt trên tivi",
-            enabled = enabled,
-            modifier = Modifier.weight(1f),
-            click = tvSettings
-        )
     }
 
     Column(
@@ -410,34 +404,42 @@ private fun RemotePanel(
         }
 
         if (textMode || state.textInputFocused) {
+            // webOS reports focus only for fields using the TV keyboard. Apps with their own
+            // keyboard (YouTube) never do, so without focus the field searches YouTube instead.
+            val intoTv = state.textInputFocused
+            val submit: () -> Unit = {
+                if (intoTv) textEnter() else textValue.takeIf { it.isNotBlank() }?.let(searchYouTube)
+                keyboardController?.hide()
+            }
             OutlinedTextField(
                 value = textValue,
                 onValueChange = {
                     val next = it.take(500)
                     textValue = next
-                    replaceText(next)
+                    if (intoTv) replaceText(next)
                 },
                 label = {
-                    Text(if (state.textInputFocused) "Nhập trên tivi" else "Nhập chữ")
+                    Text(if (intoTv) "Nhập vào ô trên tivi" else "Tìm trên YouTube")
                 },
-                placeholder = {
-                    Text(if (state.textInputFocused) "Gõ bằng bàn phím điện thoại"
-                        else "Chọn một ô nhập trên tivi")
-                },
+                placeholder = { Text("Gõ chữ hoặc bấm mic để nói") },
                 supportingText = {
-                    Text(if (state.textInputFocused) "Tivi đang chờ nhập chữ."
-                        else "Khi tivi focus vào ô nhập, bàn phím điện thoại sẽ tự hiện.")
+                    Text(if (intoTv) "Chữ gõ hoặc nói sẽ vào đúng ô đang chọn trên tivi."
+                        else "Muốn nhập vào ô khác trên tivi: chọn ô đó bằng OK, app sẽ tự chuyển.")
                 },
                 singleLine = true,
                 enabled = enabled,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = {
-                    textEnter()
-                    keyboardController?.hide()
-                }),
+                keyboardOptions = KeyboardOptions(imeAction = if (intoTv) ImeAction.Done else ImeAction.Search),
+                keyboardActions = KeyboardActions(onDone = { submit() }, onSearch = { submit() }),
                 trailingIcon = {
-                    IconButton(onClick = textEnter, enabled = enabled) {
-                        Icon(Icons.Default.KeyboardReturn, "Gửi Enter")
+                    Row {
+                        if (voiceAvailable) IconButton(onClick = { listen(intoTv) }, enabled = enabled) {
+                            Icon(Icons.Default.Mic,
+                                if (intoTv) "Nói để nhập vào ô trên tivi" else "Nói để tìm trên YouTube")
+                        }
+                        IconButton(onClick = submit, enabled = enabled && (intoTv || textValue.isNotBlank())) {
+                            Icon(if (intoTv) Icons.Default.KeyboardReturn else Icons.Default.Search,
+                                if (intoTv) "Gửi Enter" else "Tìm trên YouTube")
+                        }
                     }
                 },
                 modifier = Modifier
@@ -448,8 +450,15 @@ private fun RemotePanel(
     }
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(7.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
+        BottomRemoteButton(
+            icon = Icons.Default.Settings,
+            description = "Mở cài đặt trên tivi",
+            enabled = enabled,
+            modifier = Modifier.weight(1f),
+            click = tvSettings
+        )
         BottomRemoteButton(
             icon = Icons.AutoMirrored.Filled.ArrowBack,
             description = "Quay lại",
@@ -479,6 +488,14 @@ private fun RemotePanel(
             modifier = Modifier.weight(1f)
         ) { volume(true) }
     }
+}
+
+private fun speechIntent(prompt: String) = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+    putExtra(RecognizerIntent.EXTRA_LANGUAGE, "vi-VN")
+    putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "vi-VN")
+    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+    putExtra(RecognizerIntent.EXTRA_PROMPT, prompt)
 }
 
 @Composable
@@ -685,7 +702,7 @@ private fun BottomRemoteButton(
             contentColor = if (active) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSecondaryContainer
         ),
-        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
